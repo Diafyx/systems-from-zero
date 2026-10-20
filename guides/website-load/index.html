@@ -1,0 +1,140 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Trace a website visit from URL and DNS to HTTPS, Cloudflare Pages, HTML, CSS, pixels, and interaction.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <script src="guide.js" defer></script>
+  <title>Opening a website | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to website flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 02 · THE WEB</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 02 / THE WEB</p>
+      <h1>What happens when you open a website?</h1>
+      <p>Trace a first visit to this site's homepage, from the address bar to the pixels on your screen. Add each part when the browser needs it.</p>
+      <div class="intro-meta"><span>12 concrete steps</span><span>One static Cloudflare Pages site</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+
+    <section id="flow" class="flow" aria-label="Build the website loading flow">
+      <div class="flow-top">
+        <div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 12</span></div>
+        <div class="progress" aria-hidden="true"><span id="progress-fill"></span></div>
+      </div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Website load steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2>
+          <p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Website request participants">
+            <div class="diagram-heading"><strong>WHO IS INVOLVED</strong><span>The active part is highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="System parts added so far"></div>
+          </div>
+          <div class="handoff">
+            <h3>At this moment</h3>
+            <dl>
+              <div><dt>From</dt><dd id="handoff-from"></dd></div>
+              <div><dt>To</dt><dd id="handoff-to"></dd></div>
+              <div><dt>Data</dt><dd id="handoff-message"></dd></div>
+              <div><dt>Result</dt><dd id="handoff-state"></dd></div>
+            </dl>
+          </div>
+          <div class="explanation">
+            <div><h3>Why does this happen?</h3><p id="step-why"></p></div>
+            <div><h3>Where can you see it?</h3><p id="step-tech"></p></div>
+          </div>
+          <details class="inspect">
+            <summary>Inspect this step</summary>
+            <div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Getting_started/Web_standards/How_the_web_works" target="_blank" rel="noopener noreferrer"></a></div>
+          </details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls">
+            <button id="previous" type="button">← Previous</button>
+            <button id="next" type="button">Next step →</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">From name to pixels</h2><p>The browser solves three separate jobs to show one page.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / FIND AND TRUST</span><p>URL <b>→</b> DNS resolver <b>→</b> IP address <b>→</b> Cloudflare edge <b>→</b> TLS certificate</p><small>DNS finds a destination. TLS checks that the endpoint may speak for the host.</small></div>
+        <div><span>02 / FETCH BYTES</span><p>GET / <b>→</b> Pages asset <b>→</b> HTTP response <b>→</b> HTML + CSS requests</p><small>Browser and edge caches can each shorten this path on later visits.</small></div>
+        <div><span>03 / DRAW AND USE</span><p>HTML <b>→</b> DOM <b>→</b> CSSOM <b>→</b> layout <b>→</b> paint <b>→</b> interaction</p><small>Parsing, downloads, and rendering can overlap. The screen may appear before loading is finished.</small></div>
+      </div>
+      <p class="trace"><strong>Trace this site:</strong> https://systems-from-zero.pages.dev/ → index.html → home.css → visible homepage <span>These are the deployed files for the current static example; protocol, cache, and edge choices can differ by visit.</span></p>
+    </section>
+
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">SEE IT YOURSELF</p><h2 id="blueprint-title">Read a real browser trace</h2><p>Use DevTools to connect the diagram to an actual visit.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / FIRST LOAD</span><h3>Open Network first</h3><p>Open DevTools → Network, enable Disable cache, then reload. Click the document row. Inspect URL, status, protocol, Timing, and response headers.</p></article>
+        <article><span>02 / REPEAT</span><h3>Compare a normal reload</h3><p>Turn Disable cache off and reload. Look for cached sizes, an ETag request, or 304. DNS and connection phases may disappear if reused.</p></article>
+        <article><span>03 / BACK</span><h3>Navigate away and back</h3><p>Return with the Back button. The page may restore from back/forward cache with no new document request. This is different from HTTP cache.</p></article>
+      </div>
+      <div class="state-model">
+        <strong>The path is conditional</strong>
+        <p><span>First visit</span> URL → DNS → connection → request → response → render</p>
+        <p><span>Warm visit</span> saved response or reused connection may skip work</p>
+        <small>HTTP/2 uses TCP; HTTP/3 uses QUIC and integrates TLS into its connection setup. A dynamic app may also add application code and a database after the edge. This site's worked example is static.</small>
+      </div>
+      <details class="reference-detail"><summary>Find a problem by its layer</summary><div class="reference-body">
+        <p><strong>DNS error:</strong> the browser did not obtain a usable address. Check hostname and resolver.</p>
+        <p><strong>Connection or TLS error:</strong> the address was found, but transport or certificate validation failed.</p>
+        <p><strong>404 or 5xx:</strong> HTTP reached a server; inspect the path and server response.</p>
+        <p><strong>Unstyled or blank page:</strong> HTML may have arrived; inspect CSS, scripts, and console errors.</p>
+        <p><strong>Visible but slow to use:</strong> inspect main-thread JavaScript and later resource work.</p>
+      </div></details>
+      <details class="reference-detail"><summary>What changes on other sites?</summary><div class="reference-body">
+        <p><strong>Dynamic HTML:</strong> an application server may authenticate a user and query a database before returning HTML.</p>
+        <p><strong>JavaScript app:</strong> the first document may be small while scripts build much of the UI later.</p>
+        <p><strong>Service worker:</strong> installed code can answer some requests from its own cache.</p>
+        <p><strong>Redirects:</strong> the browser may repeat parts of the request path at a new URL.</p>
+        <p><strong>Other hosts:</strong> images, fonts, or APIs on another host may need another DNS answer and connection.</p>
+      </div></details>
+    </section>
+
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>URL</strong> The resource address, including scheme, host, and path.</p>
+        <p><strong>DNS resolver</strong> Finds an IP address for a host, often using saved answers.</p>
+        <p><strong>Authoritative DNS</strong> The source of a domain's DNS records.</p>
+        <p><strong>CDN edge</strong> A nearby server that can deliver a site's content.</p>
+        <p><strong>TLS</strong> Checks the server's certificate and protects the connection.</p>
+        <p><strong>HTTP</strong> The request and response rules used to ask for web resources.</p>
+        <p><strong>DOM and CSSOM</strong> Browser structures for document content and styles.</p>
+        <p><strong>Paint</strong> Turning layout into visible pixels.</p>
+        <p><strong>ETag</strong> A response version marker used for validation.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is a teaching trace of a first visit to a static Cloudflare Pages site. The steps reveal dependencies, but browsers can overlap work or skip steps through caches and reused connections. DNS answers, protocol choice, edge location, and timing must be observed on a real visit; the guide does not claim they are fixed for this domain.</p>
+        <ul>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/Performance/Guides/How_browsers_work" target="_blank" rel="noopener noreferrer">MDN: browser loading and rendering</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Caching" target="_blank" rel="noopener noreferrer">MDN: HTTP caching and 304</a></li>
+          <li><a href="https://developers.cloudflare.com/learning-paths/cybersafe/concepts/what-is-dns/" target="_blank" rel="noopener noreferrer">Cloudflare: DNS path</a></li>
+          <li><a href="https://developers.cloudflare.com/pages/configuration/serving-pages/" target="_blank" rel="noopener noreferrer">Cloudflare: Pages asset serving</a></li>
+          <li><a href="https://www.rfc-editor.org/rfc/rfc9114.html" target="_blank" rel="noopener noreferrer">IETF: HTTP/3 and QUIC</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Messages" target="_blank" rel="noopener noreferrer">MDN: HTTP messages</a></li>
+          <li><a href="https://developer.chrome.com/docs/devtools/network/overview" target="_blank" rel="noopener noreferrer">Chrome: Network panel</a></li>
+          <li><a href="https://web.dev/articles/bfcache" target="_blank" rel="noopener noreferrer">web.dev: back/forward cache</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>

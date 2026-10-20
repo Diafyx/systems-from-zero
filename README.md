@@ -1,6 +1,6 @@
 ﻿# Systems from Zero
 
-A collection of guides that build complex systems one part at a time. The card payments guide follows one $42 online order through 13 concrete steps. Each step shows the handoff, payment state, store software, and what can fail.
+A collection of guides that build complex systems one part at a time. Each guide follows one concrete example through the flow, the records or browser state, and the failure paths.
 
 ## Open locally
 
@@ -9,7 +9,9 @@ Open `index.html` in a browser. The site uses plain HTML, CSS, and JavaScript; t
 ## Project files
 
 - `index.html` and `home.css` — collection homepage
-- `guides/card-payments/index.html`, `guide.css`, and `guide.js` — interactive card guide
+- `guides/shared.css` — shared guide layout
+- `guides/card-payments/index.html` and `guide.js` — card payment guide
+- `guides/website-load/index.html` and `guide.js` — website loading guide
 - `favicon.svg` — shared icon
 
 The guide uses a Stripe PaymentIntent with manual capture so authorization and capture can be inspected separately. It also includes a full system map, implementation blueprint, failure checks, and links to primary sources. This is an educational worked example, not a universal bank message specification. Stripe recommends Checkout Sessions for most production checkouts.
