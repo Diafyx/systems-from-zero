@@ -1,10 +1,10 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f8f9f6">
-  <meta name="description" content="Follow an online card payment from shopper to issuer, one part at a time.">
+  <meta name="description" content="Master an online card payment through 13 concrete steps: requests, states, failures, settlement, and store software.">
   <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="guide.css">
   <script src="guide.js" defer></script>
@@ -22,12 +22,14 @@
     <div class="intro">
       <p class="eyebrow">GUIDE 01 / PAYMENTS</p>
       <h1>How a card payment works.</h1>
-      <p>Start with a shopper and a store. Add one part at a time until the full payment flow is visible.</p>
+      <p>Follow one $42 online order from the Pay button to the bank payout. Add each part when the system needs it.</p>
+      <div class="intro-meta"><span>13 concrete steps</span><span>Stripe manual capture example</span><a href="#system-map">See the whole system ↓</a></div>
     </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
 
     <section id="flow" class="flow" aria-label="Build the card payment flow">
       <div class="flow-top">
-        <div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 08</span></div>
+        <div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 13</span></div>
         <div class="progress" aria-hidden="true"><span id="progress-fill"></span></div>
       </div>
       <div class="flow-grid">
@@ -35,23 +37,31 @@
         <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
           <h2 id="step-title"></h2>
           <p id="step-summary" class="summary"></p>
-          <div class="diagram" aria-label="Payment request route">
-            <div class="diagram-heading"><strong>PAYMENT ROUTE</strong><span>Follow the request down</span></div>
+          <div class="diagram" aria-label="Payment participants">
+            <div class="diagram-heading"><strong>WHO IS INVOLVED</strong><span>The active handoff is highlighted</span></div>
             <div id="route" class="route"></div>
-            <div id="features" class="features" hidden></div>
-            <div id="outcome" class="outcome" hidden>
-              <span id="outcome-text"></span>
-              <div role="group" aria-label="Issuer decision">
-                <button type="button" data-decision="approved" aria-pressed="true">Approved</button>
-                <button type="button" data-decision="declined" aria-pressed="false">Declined</button>
-              </div>
-            </div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="System parts added so far"></div>
+          </div>
+
+          <div class="handoff">
+            <h3>At this handoff</h3>
+            <dl>
+              <div><dt>From</dt><dd id="handoff-from"></dd></div>
+              <div><dt>To</dt><dd id="handoff-to"></dd></div>
+              <div><dt>Sent</dt><dd id="handoff-message"></dd></div>
+              <div><dt>State</dt><dd id="handoff-state"></dd></div>
+            </dl>
           </div>
           <div class="explanation">
             <div><h3>Why add this?</h3><p id="step-why"></p></div>
-            <div><h3>Example software</h3><p id="step-tech"></p></div>
+            <div><h3>What does the store build?</h3><p id="step-tech"></p></div>
           </div>
-          <p class="takeaway"><strong>Remember</strong><span id="takeaway"></span></p>
+          <details class="inspect">
+            <summary>Inspect this step</summary>
+            <div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://docs.stripe.com/payments/paymentintents/lifecycle" target="_blank" rel="noopener noreferrer"></a></div>
+          </details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
           <div class="controls">
             <button id="previous" type="button">← Previous</button>
             <button id="next" type="button">Next step →</button>
@@ -60,13 +70,65 @@
       </div>
     </section>
 
-    <section id="software" class="software" aria-labelledby="software-title">
-      <div class="section-heading"><p class="eyebrow">ONE POSSIBLE STORE SETUP</p><h2 id="software-title">Where the tools fit</h2><p>The store builds the order flow. The provider and banks handle the card route.</p></div>
-      <div class="software-list">
-        <div><span>01</span><div><h3>Checkout</h3><p>A provider-controlled card form, such as Stripe Payment Element, collects card details. The store API creates the order and payment request.</p></div></div>
-        <div><span>02</span><div><h3>Payment state</h3><p>A verified webhook updates the order in PostgreSQL. Idempotency keys and safe event handling help with retries.</p></div></div>
-        <div><span>03</span><div><h3>Events, if needed</h3><p>As the store grows, an outbox can send a paid-order event to Kafka. Workers use it for fulfillment, email, or analytics. The issuer still decides whether to approve the card.</p></div></div>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">Three paths, one payment</h2><p>The request, the store record, and the money move on different paths.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / CARD REQUEST</span><p>Shopper <b>→</b> secure checkout <b>→</b> provider <b>→</b> acquirer <b>→</b> network <b>→</b> issuer</p><small>Approval or decline returns through the provider. 3-D Secure may happen during confirmation.</small></div>
+        <div><span>02 / STORE STATE</span><p>Provider event <b>→</b> verified webhook <b>→</b> order database <b>→</b> fulfillment</p><small>Start with a database worker. Add an outbox and Kafka only when more services need the event.</small></div>
+        <div><span>03 / MONEY</span><p>Authorization <b>→</b> capture <b>→</b> clearing <b>→</b> settlement <b>→</b> provider balance <b>→</b> payout</p><small>Reconcile provider transactions and fees with the bank deposit. Refunds and disputes can change the balance later.</small></div>
       </div>
+      <p class="trace"><strong>Trace the $42 order:</strong> ord_1042 → pi_example → ch_example → txn_example → po_example <span>Example IDs: order, payment, charge, balance transaction, payout. One payout can include many transactions.</span></p>
+    </section>
+
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">IMPLEMENTATION BLUEPRINT</p><h2 id="blueprint-title">Build it without losing track</h2><p>These are the records and rules behind the diagram.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / BASE</span><h3>Start with the small system</h3><p>Server-priced order, provider checkout, a stored payment ID, verified webhooks, and a database-backed fulfillment job. This is enough for a clear first version.</p></article>
+        <article><span>02 / RELIABILITY</span><h3>Make retries safe</h3><p>Use idempotency keys for provider writes, unique provider event IDs, monotonic order states, and idempotent fulfillment. Timeouts are unknown until checked.</p></article>
+        <article><span>03 / GROWTH</span><h3>Add tools for a reason</h3><p>Use an outbox when database changes must reliably produce events. Kafka becomes useful when multiple services need the stream. Add reconciliation as volume grows.</p></article>
+      </div>
+      <div class="state-model">
+        <strong>Keep two kinds of state</strong>
+        <p><span>Store order</span> awaiting_payment → authorized → paid → fulfilled</p>
+        <p><span>Provider payment</span> requires_payment_method → requires_action if needed → requires_capture → succeeded</p>
+        <small>A decline returns the payment to requires_payment_method and leaves the order unpaid. Refunds and disputes have separate records; they do not erase the original payment.</small>
+      </div>
+      <details class="reference-detail">
+        <summary>Webhook processing sequence</summary>
+        <div class="reference-body">
+          <ol>
+            <li>Verify the signature against the unmodified request body.</li>
+            <li>Find the order through the provider payment ID; check amount and currency.</li>
+            <li>Record the provider event ID with a unique constraint.</li>
+            <li>In one database transaction, mark the order paid once and write a fulfillment job or outbox event.</li>
+            <li>Return a success response after durable acceptance. Let the worker handle shipping or email.</li>
+          </ol>
+          <p>If events arrive out of order, read the provider's current payment state and apply only a valid forward transition. Never let an old event reverse a paid order.</p>
+        </div>
+      </details>
+      <details class="reference-detail">
+        <summary>Records to keep</summary>
+        <div class="reference-body">
+          <div class="record"><strong>orders</strong><span>order_id, amount, currency, payment_state, fulfillment_state</span></div>
+          <div class="record"><strong>payment_attempts</strong><span>order_id, provider_intent_id, provider_status, authorized_amount, captured_amount</span></div>
+          <div class="record"><strong>provider_events</strong><span>event_id (unique), event_type, provider_object_id, received_at</span></div>
+          <div class="record"><strong>outbox</strong><span>event_id (unique), aggregate_id, event_type, payload, published_at</span></div>
+          <div class="record"><strong>refunds / disputes</strong><span>their own IDs, amounts, statuses, and link to the original payment</span></div>
+          <p>These are teaching fields, not a complete production schema. Store credentials and secrets separately; never put raw card details here.</p>
+        </div>
+      </details>
+      <details class="reference-detail">
+        <summary>Failures to test</summary>
+        <div class="reference-body check-list">
+          <p><strong>Price changed:</strong> server recomputes the amount before payment creation.</p>
+          <p><strong>Card declined:</strong> order stays unpaid; shopper can try again.</p>
+          <p><strong>3-D Secure abandoned:</strong> order stays pending until provider state resolves.</p>
+          <p><strong>API timed out:</strong> retrieve or retry the same operation with its idempotency key.</p>
+          <p><strong>Webhook repeated or reordered:</strong> only one paid transition and one fulfillment.</p>
+          <p><strong>Capture expired:</strong> do not fulfill; ask for a new payment attempt.</p>
+          <p><strong>Refund failed or dispute opened:</strong> track a separate case and adjust finance records.</p>
+        </div>
+      </details>
     </section>
 
     <section class="reference" aria-label="Reference information">
@@ -74,20 +136,30 @@
         <p><strong>Issuer</strong> The shopper's card bank; it approves or declines.</p>
         <p><strong>Acquirer</strong> The store's bank or acquiring partner.</p>
         <p><strong>Card network</strong> Routes messages between the two sides.</p>
-        <p><strong>3-D Secure</strong> An extra check of the shopper's identity when needed.</p>
-        <p><strong>Authorization</strong> The decision to approve or decline; an approval usually places a hold.</p>
-        <p><strong>Capture, clearing, settlement</strong> Submit the approved charge, exchange transaction records, then move funds.</p>
-        <p><strong>Webhook</strong> A server-to-server update from the provider.</p>
+        <p><strong>3-D Secure</strong> An identity check when required.</p>
+        <p><strong>Authorization</strong> Approval to charge; usually a hold, not merchant funds.</p>
+        <p><strong>Capture</strong> Submission of an approved charge.</p>
+        <p><strong>Clearing and settlement</strong> Exchange transaction records, then move funds between institutions.</p>
+        <p><strong>Payout</strong> Provider sends available balance to the merchant bank.</p>
+        <p><strong>Webhook</strong> A server-to-server provider update.</p>
+        <p><strong>Outbox</strong> A durable record of an event to publish after a database change.</p>
       </div></details>
       <details><summary>Sources and scope</summary><div class="reference-body">
-        <p>This is a teaching model of a typical online card purchase. Routes and timing vary by provider and region. The software choices above are examples.</p>
+        <p>This is a worked example of a Stripe PaymentIntent with manual capture for one online card order. It exposes the states for learning. Stripe recommends Checkout Sessions for most real integrations. Downstream bank message formats and timing differ by network, provider, and region; the handoffs here are conceptual, not copies of bank wire messages.</p>
         <ul>
-          <li><a href="https://developer.visa.com/docs/visanet-connect-acceptance" target="_blank" rel="noopener noreferrer">Visa: payment lifecycle</a></li>
-          <li><a href="https://docs.stripe.com/payments/payment-element" target="_blank" rel="noopener noreferrer">Stripe: Payment Element</a></li>
-          <li><a href="https://docs.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">Stripe: webhooks</a></li>
+          <li><a href="https://docs.stripe.com/payments/payment-element" target="_blank" rel="noopener noreferrer">Stripe: Payment Element and integration choices</a></li>
+          <li><a href="https://docs.stripe.com/payments/paymentintents/lifecycle" target="_blank" rel="noopener noreferrer">Stripe: PaymentIntent lifecycle</a></li>
+          <li><a href="https://docs.stripe.com/payments/place-a-hold-on-a-payment-method" target="_blank" rel="noopener noreferrer">Stripe: manual capture</a></li>
+          <li><a href="https://developer.visa.com/docs/visanet-connect-acceptance" target="_blank" rel="noopener noreferrer">Visa: authorization, capture, and settlement</a></li>
+          <li><a href="https://docs.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">Stripe: webhook delivery and retries</a></li>
           <li><a href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener noreferrer">Stripe: idempotent requests</a></li>
-          <li><a href="https://kafka.apache.org/intro/" target="_blank" rel="noopener noreferrer">Apache Kafka: event streaming</a></li>
+          <li><a href="https://www.pcisecuritystandards.org/faqs/1438/" target="_blank" rel="noopener noreferrer">PCI SSC: hosted card entry boundary</a></li>
           <li><a href="https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html" target="_blank" rel="noopener noreferrer">Debezium: outbox pattern</a></li>
+          <li><a href="https://kafka.apache.org/intro/" target="_blank" rel="noopener noreferrer">Apache Kafka: event streaming</a></li>
+          <li><a href="https://docs.stripe.com/payouts" target="_blank" rel="noopener noreferrer">Stripe: payouts</a></li>
+          <li><a href="https://docs.stripe.com/api/balance_transactions" target="_blank" rel="noopener noreferrer">Stripe: balance transactions</a></li>
+          <li><a href="https://docs.stripe.com/refunds" target="_blank" rel="noopener noreferrer">Stripe: refunds</a></li>
+          <li><a href="https://docs.stripe.com/disputes" target="_blank" rel="noopener noreferrer">Stripe: disputes</a></li>
         </ul>
       </div></details>
     </section>
