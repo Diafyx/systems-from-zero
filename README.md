@@ -13,7 +13,7 @@ Open `index.html` in a browser. The site uses plain HTML, CSS, and JavaScript, s
 - `styles.css` and `app.js` — card guide styles and eight interactive steps
 - `favicon.svg` — shared site icon
 
-The card guide's diagrams are a teaching model of a typical online card payment. Providers and regions can use different routes or timing. The guide footer links to Visa and Stripe documentation for the core payment stages.
+The card guide's diagrams are a teaching model of a typical online card payment. Its payment path shows who handles the request; its implementation section shows one possible store-side stack with a hosted checkout, PostgreSQL, webhooks, and optional Kafka. Kafka carries events to other store services in this example; the issuer still decides whether to approve a card payment. Providers and regions can use different routes or timing. The guide footer links to primary documentation for the payment stages and example tools.
 
 ## Adding a guide
 

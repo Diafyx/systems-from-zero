@@ -20,8 +20,8 @@
       </a>
       <nav aria-label="Main navigation">
         <a href="../../">All guides</a>
-        <a href="#builder">The build</a>
-        <a href="#timeline">Money timeline</a>
+        <a href="#builder">Payment path</a>
+        <a href="#implementation">Example stack</a>
       </nav>
       <span class="header-tag">GUIDE 01 / CARD PAYMENTS</span>
     </header>
@@ -68,6 +68,7 @@
           <div><div class="eyebrow"><span class="eyebrow-dot"></span> THE INTERACTIVE BUILD</div><h2 id="builder-heading">From first sketch to full flow.</h2></div>
           <p>This is a teaching model of a typical online card purchase. The exact path can vary by provider and region.</p>
         </div>
+        <div class="view-key" aria-label="Two views in this guide"><div><span>01 / PAYMENT PATH</span><strong>Who handles the card request?</strong><p>Follow the shopper, store, provider, network, and issuer.</p></div><div><span>02 / EXAMPLE SOFTWARE</span><strong>What might a store build?</strong><p>See where a checkout SDK, database, webhooks, and Kafka can fit. <a href="#implementation">Jump to the stack →</a></p></div></div>
 
         <div class="step-shell">
           <div class="step-rail-heading"><span>BUILD PROGRESS</span><span id="step-count">01 / 08</span></div>
@@ -87,6 +88,10 @@
                 <div class="detail-label"><span class="detail-icon question">?</span> WHY IT MATTERS</div>
                 <p id="step-why"></p>
               </div>
+              <div class="story-detail tech-detail">
+                <div class="detail-label"><span class="detail-icon tech-icon">⌘</span> EXAMPLE SOFTWARE</div>
+                <p id="step-tech"></p>
+              </div>
               <div class="story-navigation">
                 <button id="previous-step" class="nav-button nav-previous" type="button" aria-label="Previous step"><span aria-hidden="true">←</span> Previous</button>
                 <button id="next-step" class="nav-button nav-next" type="button">Next step <span aria-hidden="true">→</span></button>
@@ -94,22 +99,35 @@
             </article>
 
             <div class="diagram-panel">
-              <div class="diagram-top"><div><span class="diagram-live-dot"></span> SYSTEM VIEW</div><span id="diagram-status">A first sketch</span></div>
-              <div class="diagram-instruction">Scroll sideways to see the full path <span aria-hidden="true">→</span></div>
-              <div class="diagram-scroll" tabindex="0" aria-label="Card payment flow diagram, scroll horizontally on small screens">
+              <div class="diagram-top"><div><span class="diagram-live-dot"></span> PAYMENT PATH</div><span id="diagram-status">A first sketch</span></div>
+              <div class="diagram-scroll" role="group" aria-label="Card payment path, from shopper down to issuer">
                 <div class="diagram-canvas">
-                  <div class="diagram-caption"><span>THE REQUEST</span><span>LEFT TO RIGHT <span aria-hidden="true">→</span></span></div>
+                  <div class="diagram-caption"><span>THE REQUEST</span><span>TOP TO BOTTOM <span aria-hidden="true">↓</span></span></div>
+                  <p class="route-note">The arrows show the handoffs. Once added, secure checkout sends card details to the provider.</p>
                   <div id="flow-nodes" class="flow-nodes"></div>
-                  <div id="response-line" class="response-line"><span class="response-arrow" aria-hidden="true">←</span><span id="response-label">Issuer sends its decision back</span><div id="scenario-controls" class="scenario-controls" role="group" aria-label="Issuer decision"><button class="scenario-button selected" type="button" data-outcome="approved" aria-pressed="true">Approved</button><button class="scenario-button" type="button" data-outcome="declined" aria-pressed="false">Declined</button></div></div>
+                  <div id="response-line" class="response-line"><span class="response-arrow" aria-hidden="true">↑</span><span id="response-label">Issuer sends its decision back</span><div id="scenario-controls" class="scenario-controls" role="group" aria-label="Issuer decision"><button class="scenario-button selected" type="button" data-outcome="approved" aria-pressed="true">Approved</button><button class="scenario-button" type="button" data-outcome="declined" aria-pressed="false">Declined</button></div></div>
                   <div id="diagram-extra" class="diagram-extra"></div>
                 </div>
               </div>
-              <div class="diagram-footer"><span class="legend-item"><i class="legend-active"></i> In the system</span><span class="legend-item"><i class="legend-new"></i> Added now</span><span class="legend-item"><i class="legend-later"></i> Coming later</span></div>
+              <div class="diagram-footer"><span class="legend-item"><i class="legend-active"></i> In the system</span><span class="legend-item"><i class="legend-new"></i> Added now</span><span class="legend-item"><i class="legend-later"></i> Coming later</span><a href="#implementation">See example software →</a></div>
             </div>
           </div>
           <div class="step-takeaway"><span class="takeaway-label">KEEP THIS IN MIND</span><p id="step-takeaway"></p></div>
         </div>
       </section>
+
+      <section id="implementation" class="implementation-section" aria-labelledby="implementation-title"><div class="section-wrap">
+        <div class="section-heading"><div><div class="eyebrow"><span class="eyebrow-dot"></span> ONE POSSIBLE IMPLEMENTATION</div><h2 id="implementation-title">Where tools like Kafka fit.</h2></div><p>This is an example store-side stack. A real store may choose different tools or use fewer services.</p></div>
+        <div class="implementation-intro"><div><span class="implementation-intro-label">THE BOUNDARY</span><strong>Your store builds the order flow.</strong><p>The provider and banks handle the card route. The issuer makes the approval decision.</p></div><div class="implementation-intro-side"><span>EXAMPLE TOOLS</span><p>Stripe Payment Element · Node.js · PostgreSQL · optional Kafka</p></div></div>
+        <div class="stack-flow" aria-label="Example software flow for an online card payment">
+          <article class="stack-row"><span class="stack-number">01</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary your-app">YOUR STORE</span><h3>Store API + PostgreSQL</h3></div><p>The server creates an order and a payment request. PostgreSQL keeps the order amount and payment state. A unique request key makes retries safer.</p><div class="stack-tools"><span>Node.js, Java, or Go</span><span>PostgreSQL</span><span>Idempotency key</span></div></div></article>
+          <article class="stack-row"><span class="stack-number">02</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary shared-edge">AT CHECKOUT</span><h3>Hosted card form</h3></div><p>The shopper enters card details in a provider-controlled form. The store receives a payment reference, not raw card details in its order record.</p><div class="stack-tools"><span>Stripe Payment Element, for example</span></div></div></article>
+          <article class="stack-row"><span class="stack-number">03</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary outside-app">OUTSIDE YOUR STORE</span><h3>Provider → banks</h3></div><p>The provider sends the authorization request through the acquirer and card network. The issuer approves or declines it. Kafka is not needed for this decision.</p><div class="stack-tools"><span>Payment provider API</span><span>Acquirer</span><span>Card network</span><span>Issuer</span></div></div></article>
+          <article class="stack-row"><span class="stack-number">04</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary your-app">YOUR STORE</span><h3>Webhook handler + PostgreSQL</h3></div><p>The provider sends a server-to-server update. The store verifies it, handles repeats safely, and updates the order record. This can happen after the shopper closes the page.</p><div class="stack-tools"><span>Webhook endpoint</span><span>Signature check</span><span>PostgreSQL</span></div></div></article>
+          <article class="stack-row optional-row"><span class="stack-number">05</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary optional-app">OPTIONAL AS THE STORE GROWS</span><h3>Outbox → Kafka → workers</h3></div><p>Once the store records a successful payment, it can publish an event for shipping, email, or analytics. An outbox helps keep the database change and event in sync. Kafka carries these events to other services.</p><div class="stack-tools"><span>Outbox table</span><span>Apache Kafka</span><span>Fulfillment worker</span></div></div></article>
+        </div>
+        <div class="implementation-answer"><span aria-hidden="true">✳</span><p><strong>So, should Kafka appear in the guide?</strong> Yes, as an optional way for the store’s services to share events after payment state changes. A small store can begin with a database and webhook handler.</p></div>
+      </div></section>
 
       <section id="timeline" class="timeline-section" aria-labelledby="timeline-heading">
         <div class="section-wrap">
@@ -132,12 +150,15 @@
           <article><span class="term-index">04 / SERVICE</span><h3>Payment provider</h3><p>The service the store connects to for checkout and payment processing. Its exact role varies.</p></article>
           <article><span class="term-index">05 / CHECK</span><h3>3-D Secure</h3><p>An extra way for the issuer to check the shopper’s identity when needed.</p></article>
           <article><span class="term-index">06 / MESSAGE</span><h3>Webhook</h3><p>A server-to-server update that tells the store when a payment changes state.</p></article>
+          <article><span class="term-index">07 / RETRY</span><h3>Idempotency key</h3><p>A unique label that helps the provider recognize a repeated request.</p></article>
+          <article><span class="term-index">08 / RECORD</span><h3>Outbox</h3><p>A database table that holds events to send after the order record changes.</p></article>
+          <article><span class="term-index">09 / EVENT STREAM</span><h3>Kafka</h3><p>A tool that can pass events to other store services. It is optional in this example.</p></article>
         </div>
       </section>
 
       <section class="closing-section"><div class="section-wrap closing-inner"><div><span class="closing-kicker">YOU HAVE THE WHOLE PICTURE</span><h2>Seven parts. One payment.<br /><em>Now every handoff has a reason.</em></h2></div><a class="button button-dark" href="#builder">Walk through it again <span aria-hidden="true">↗</span></a></div></section>
     </main>
 
-    <footer class="site-footer section-wrap"><div><a class="wordmark footer-wordmark" href="../../"><span class="wordmark-mark" aria-hidden="true"><span></span><span></span></span><span>SYSTEMS<span class="wordmark-slash">/</span>ZERO</span></a><p>One system at a time, built from the first sketch to the full flow.</p></div><div class="source-list"><span>SOURCES FOR THE PAYMENT FLOW</span><a href="https://developer.visa.com/docs/visanet-connect-acceptance" target="_blank" rel="noopener noreferrer">Visa: authorization, capture and settlement ↗</a><a href="https://corporate.visa.com/en/solutions/visa-protect/insights/3d-secure.html" target="_blank" rel="noopener noreferrer">Visa: 3-D Secure and payment stages ↗</a><a href="https://docs.stripe.com/payments/payment-element/migration" target="_blank" rel="noopener noreferrer">Stripe: payment states and webhooks ↗</a><a href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener noreferrer">Stripe: safe retries ↗</a></div><p class="footer-fine">Educational overview. Specific integrations and timing vary by provider, card network, and region.</p></footer>
+    <footer class="site-footer section-wrap"><div><a class="wordmark footer-wordmark" href="../../"><span class="wordmark-mark" aria-hidden="true"><span></span><span></span></span><span>SYSTEMS<span class="wordmark-slash">/</span>ZERO</span></a><p>One system at a time, built from the first sketch to the full flow.</p></div><div class="source-list"><span>SOURCES FOR THIS GUIDE</span><a href="https://developer.visa.com/docs/visanet-connect-acceptance" target="_blank" rel="noopener noreferrer">Visa: authorization, capture and settlement ↗</a><a href="https://docs.stripe.com/payments/payment-element" target="_blank" rel="noopener noreferrer">Stripe: hosted payment form ↗</a><a href="https://docs.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">Stripe: webhook events ↗</a><a href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener noreferrer">Stripe: safe retries ↗</a><a href="https://kafka.apache.org/intro/" target="_blank" rel="noopener noreferrer">Apache Kafka: event streaming ↗</a><a href="https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html" target="_blank" rel="noopener noreferrer">Debezium: outbox pattern ↗</a></div><p class="footer-fine">Educational overview. Specific integrations and timing vary by provider, card network, and region. The software stack is an example, not a required setup.</p></footer>
   </body>
 </html>
