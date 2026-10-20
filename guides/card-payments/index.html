@@ -1,164 +1,97 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#111b1d" />
-    <meta name="description" content="An interactive, step-by-step guide to how an online card payment works." />
-    <link rel="icon" href="../../favicon.svg" type="image/svg+xml" />
-    <title>Card payments | Systems from Zero</title>
-    <link rel="stylesheet" href="../../styles.css" />
-    <script src="../../app.js" defer></script>
-  </head>
-  <body>
-    <a class="skip-link" href="#builder">Skip to the payment builder</a>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Follow an online card payment from shopper to issuer, one part at a time.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="guide.css">
+  <script src="guide.js" defer></script>
+  <title>Card payments | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to payment flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 01 · CARD PAYMENTS</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
 
-    <header class="site-header">
-      <a class="wordmark" href="../../" aria-label="Systems from Zero, all guides">
-        <span class="wordmark-mark" aria-hidden="true"><span></span><span></span></span>
-        <span>SYSTEMS<span class="wordmark-slash">/</span>ZERO</span>
-      </a>
-      <nav aria-label="Main navigation">
-        <a href="../../">All guides</a>
-        <a href="#builder">Payment path</a>
-        <a href="#implementation">Example stack</a>
-      </nav>
-      <span class="header-tag">GUIDE 01 / CARD PAYMENTS</span>
-    </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 01 / PAYMENTS</p>
+      <h1>How a card payment works.</h1>
+      <p>Start with a shopper and a store. Add one part at a time until the full payment flow is visible.</p>
+    </div>
 
-    <main id="top">
-      <section class="hero" aria-labelledby="hero-title">
-        <div class="hero-inner">
-          <div class="hero-copy">
-            <a class="guide-back" href="../../"><span aria-hidden="true">←</span> All guides</a>
-            <div class="eyebrow light"><span class="eyebrow-dot"></span> GUIDE 01 / ONLINE CARD PAYMENTS</div>
-            <h1 id="hero-title">Build a card payment,<br /><em>one piece at a time.</em></h1>
-            <p>Start with a customer and a store. Add each part when a real problem calls for it. By the end, the full flow makes sense.</p>
-            <div class="hero-actions">
-              <a class="button button-light" href="#builder">Start from step one <span aria-hidden="true">↗</span></a>
-              <a class="text-link" href="#timeline">See where the money goes <span aria-hidden="true">→</span></a>
-            </div>
-            <div class="hero-meta"><span>08 small steps</span><span class="meta-divider"></span><span>About 5 minutes</span><span class="meta-divider"></span><span>No banking background needed</span></div>
-          </div>
-          <div class="hero-art" aria-hidden="true">
-            <div class="art-orbit orbit-one"></div><div class="art-orbit orbit-two"></div>
-            <div class="floating-label label-top"><span class="small-signal"></span> REQUEST SENT</div>
-            <div class="payment-card">
-              <div class="card-top"><span>CARD / FLOW</span><span class="card-chip"><i></i><i></i><i></i></span></div>
-              <div class="card-center"><span>•••• &nbsp; •••• &nbsp; •••• &nbsp; 4242</span></div>
-              <div class="card-bottom"><span>THE CARDHOLDER</span><span class="card-brand"><i></i><i></i></span></div>
-            </div>
-            <div class="floating-receipt">
-              <div class="receipt-icon">✓</div>
-              <div><span>Payment authorized</span><strong>$42.00</strong></div>
-            </div>
-            <div class="art-caption">A $42 purchase, viewed from the inside.</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="intro-strip" aria-label="How to use this guide">
-        <span class="intro-index">THE IDEA</span>
-        <p>Each step adds one part to the system. Follow the path across the diagram, then read why that part exists.</p>
-        <span class="intro-arrow" aria-hidden="true">↓</span>
-      </section>
-
-      <section id="builder" class="builder section-wrap" aria-labelledby="builder-heading">
-        <div class="section-heading">
-          <div><div class="eyebrow"><span class="eyebrow-dot"></span> THE INTERACTIVE BUILD</div><h2 id="builder-heading">From first sketch to full flow.</h2></div>
-          <p>This is a teaching model of a typical online card purchase. The exact path can vary by provider and region.</p>
-        </div>
-        <div class="view-key" aria-label="Two views in this guide"><div><span>01 / PAYMENT PATH</span><strong>Who handles the card request?</strong><p>Follow the shopper, store, provider, network, and issuer.</p></div><div><span>02 / EXAMPLE SOFTWARE</span><strong>What might a store build?</strong><p>See where a checkout SDK, database, webhooks, and Kafka can fit. <a href="#implementation">Jump to the stack →</a></p></div></div>
-
-        <div class="step-shell">
-          <div class="step-rail-heading"><span>BUILD PROGRESS</span><span id="step-count">01 / 08</span></div>
-          <div id="step-nav" class="step-nav" role="tablist" aria-label="Payment system build steps"></div>
-          <div class="step-progress" aria-hidden="true"><span id="step-progress-fill"></span></div>
-
-          <div class="build-layout">
-            <article class="story-panel" id="step-panel" role="tabpanel" aria-live="polite">
-              <div class="story-kicker"><span id="step-number">STEP 01</span><span class="kicker-rule"></span><span id="step-tag">THE FIRST SKETCH</span></div>
-              <h3 id="step-title"></h3>
-              <p id="step-description" class="story-description"></p>
-              <div class="story-detail">
-                <div class="detail-label"><span class="detail-icon">+</span> WHAT WE ADD</div>
-                <p id="step-add"></p>
+    <section id="flow" class="flow" aria-label="Build the card payment flow">
+      <div class="flow-top">
+        <div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 08</span></div>
+        <div class="progress" aria-hidden="true"><span id="progress-fill"></span></div>
+      </div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Payment flow steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2>
+          <p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Payment request route">
+            <div class="diagram-heading"><strong>PAYMENT ROUTE</strong><span>Follow the request down</span></div>
+            <div id="route" class="route"></div>
+            <div id="features" class="features" hidden></div>
+            <div id="outcome" class="outcome" hidden>
+              <span id="outcome-text"></span>
+              <div role="group" aria-label="Issuer decision">
+                <button type="button" data-decision="approved" aria-pressed="true">Approved</button>
+                <button type="button" data-decision="declined" aria-pressed="false">Declined</button>
               </div>
-              <div class="story-detail why-detail">
-                <div class="detail-label"><span class="detail-icon question">?</span> WHY IT MATTERS</div>
-                <p id="step-why"></p>
-              </div>
-              <div class="story-detail tech-detail">
-                <div class="detail-label"><span class="detail-icon tech-icon">⌘</span> EXAMPLE SOFTWARE</div>
-                <p id="step-tech"></p>
-              </div>
-              <div class="story-navigation">
-                <button id="previous-step" class="nav-button nav-previous" type="button" aria-label="Previous step"><span aria-hidden="true">←</span> Previous</button>
-                <button id="next-step" class="nav-button nav-next" type="button">Next step <span aria-hidden="true">→</span></button>
-              </div>
-            </article>
-
-            <div class="diagram-panel">
-              <div class="diagram-top"><div><span class="diagram-live-dot"></span> PAYMENT PATH</div><span id="diagram-status">A first sketch</span></div>
-              <div class="diagram-scroll" role="group" aria-label="Card payment path, from shopper down to issuer">
-                <div class="diagram-canvas">
-                  <div class="diagram-caption"><span>THE REQUEST</span><span>TOP TO BOTTOM <span aria-hidden="true">↓</span></span></div>
-                  <p class="route-note">The arrows show the handoffs. Once added, secure checkout sends card details to the provider.</p>
-                  <div id="flow-nodes" class="flow-nodes"></div>
-                  <div id="response-line" class="response-line"><span class="response-arrow" aria-hidden="true">↑</span><span id="response-label">Issuer sends its decision back</span><div id="scenario-controls" class="scenario-controls" role="group" aria-label="Issuer decision"><button class="scenario-button selected" type="button" data-outcome="approved" aria-pressed="true">Approved</button><button class="scenario-button" type="button" data-outcome="declined" aria-pressed="false">Declined</button></div></div>
-                  <div id="diagram-extra" class="diagram-extra"></div>
-                </div>
-              </div>
-              <div class="diagram-footer"><span class="legend-item"><i class="legend-active"></i> In the system</span><span class="legend-item"><i class="legend-new"></i> Added now</span><span class="legend-item"><i class="legend-later"></i> Coming later</span><a href="#implementation">See example software →</a></div>
             </div>
           </div>
-          <div class="step-takeaway"><span class="takeaway-label">KEEP THIS IN MIND</span><p id="step-takeaway"></p></div>
-        </div>
-      </section>
-
-      <section id="implementation" class="implementation-section" aria-labelledby="implementation-title"><div class="section-wrap">
-        <div class="section-heading"><div><div class="eyebrow"><span class="eyebrow-dot"></span> ONE POSSIBLE IMPLEMENTATION</div><h2 id="implementation-title">Where tools like Kafka fit.</h2></div><p>This is an example store-side stack. A real store may choose different tools or use fewer services.</p></div>
-        <div class="implementation-intro"><div><span class="implementation-intro-label">THE BOUNDARY</span><strong>Your store builds the order flow.</strong><p>The provider and banks handle the card route. The issuer makes the approval decision.</p></div><div class="implementation-intro-side"><span>EXAMPLE TOOLS</span><p>Stripe Payment Element · Node.js · PostgreSQL · optional Kafka</p></div></div>
-        <div class="stack-flow" aria-label="Example software flow for an online card payment">
-          <article class="stack-row"><span class="stack-number">01</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary your-app">YOUR STORE</span><h3>Store API + PostgreSQL</h3></div><p>The server creates an order and a payment request. PostgreSQL keeps the order amount and payment state. A unique request key makes retries safer.</p><div class="stack-tools"><span>Node.js, Java, or Go</span><span>PostgreSQL</span><span>Idempotency key</span></div></div></article>
-          <article class="stack-row"><span class="stack-number">02</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary shared-edge">AT CHECKOUT</span><h3>Hosted card form</h3></div><p>The shopper enters card details in a provider-controlled form. The store receives a payment reference, not raw card details in its order record.</p><div class="stack-tools"><span>Stripe Payment Element, for example</span></div></div></article>
-          <article class="stack-row"><span class="stack-number">03</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary outside-app">OUTSIDE YOUR STORE</span><h3>Provider → banks</h3></div><p>The provider sends the authorization request through the acquirer and card network. The issuer approves or declines it. Kafka is not needed for this decision.</p><div class="stack-tools"><span>Payment provider API</span><span>Acquirer</span><span>Card network</span><span>Issuer</span></div></div></article>
-          <article class="stack-row"><span class="stack-number">04</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary your-app">YOUR STORE</span><h3>Webhook handler + PostgreSQL</h3></div><p>The provider sends a server-to-server update. The store verifies it, handles repeats safely, and updates the order record. This can happen after the shopper closes the page.</p><div class="stack-tools"><span>Webhook endpoint</span><span>Signature check</span><span>PostgreSQL</span></div></div></article>
-          <article class="stack-row optional-row"><span class="stack-number">05</span><div class="stack-body"><div class="stack-heading"><span class="stack-boundary optional-app">OPTIONAL AS THE STORE GROWS</span><h3>Outbox → Kafka → workers</h3></div><p>Once the store records a successful payment, it can publish an event for shipping, email, or analytics. An outbox helps keep the database change and event in sync. Kafka carries these events to other services.</p><div class="stack-tools"><span>Outbox table</span><span>Apache Kafka</span><span>Fulfillment worker</span></div></div></article>
-        </div>
-        <div class="implementation-answer"><span aria-hidden="true">✳</span><p><strong>So, should Kafka appear in the guide?</strong> Yes, as an optional way for the store’s services to share events after payment state changes. A small store can begin with a database and webhook handler.</p></div>
-      </div></section>
-
-      <section id="timeline" class="timeline-section" aria-labelledby="timeline-heading">
-        <div class="section-wrap">
-          <div class="section-heading timeline-heading"><div><div class="eyebrow"><span class="eyebrow-dot"></span> FOLLOW THE MONEY</div><h2 id="timeline-heading">Approved does not mean paid.</h2></div><p>Three different moments are often called “the payment.” They do different jobs.</p></div>
-          <div class="money-timeline">
-            <article class="timeline-card"><span class="timeline-number">01</span><div class="timeline-symbol">↗</div><div><h3>Authorization</h3><p>The issuer says yes or no. A yes usually places a hold for the amount. Money has not reached the store.</p><span class="timeline-status">Decision, usually in seconds</span></div></article>
-            <article class="timeline-card"><span class="timeline-number">02</span><div class="timeline-symbol">◎</div><div><h3>Capture &amp; clearing</h3><p>The approved charge is captured, sometimes automatically. Transaction details are sent through the card system so both banks can record it.</p><span class="timeline-status">The charge is submitted</span></div></article>
-            <article class="timeline-card"><span class="timeline-number">03</span><div class="timeline-symbol">✓</div><div><h3>Settlement</h3><p>Funds move between the banks. The acquirer then makes the merchant’s money available, after any fees.</p><span class="timeline-status">Funds move later</span></div></article>
+          <div class="explanation">
+            <div><h3>Why add this?</h3><p id="step-why"></p></div>
+            <div><h3>Example software</h3><p id="step-tech"></p></div>
           </div>
-          <div class="timeline-note"><span class="note-star">✳</span><p><strong>Debit and credit follow the same broad route here.</strong> A debit card uses account funds; a credit card uses available credit. The shopper may see a pending charge before it is final.</p></div>
-        </div>
-      </section>
+          <p class="takeaway"><strong>Remember</strong><span id="takeaway"></span></p>
+          <div class="controls">
+            <button id="previous" type="button">← Previous</button>
+            <button id="next" type="button">Next step →</button>
+          </div>
+        </article>
+      </div>
+    </section>
 
-      <section id="glossary" class="glossary-section section-wrap" aria-labelledby="glossary-heading">
-        <div class="section-heading"><div><div class="eyebrow"><span class="eyebrow-dot"></span> THE WORDS YOU NEED</div><h2 id="glossary-heading">A small glossary.</h2></div><p>Standard payment terms, translated into plain English.</p></div>
-        <div class="glossary-grid">
-          <article><span class="term-index">01 / BANK</span><h3>Issuer</h3><p>The shopper’s card bank. It decides whether to approve the payment.</p></article>
-          <article><span class="term-index">02 / BANK</span><h3>Acquirer</h3><p>The merchant’s bank or acquiring partner. It helps the store accept card payments.</p></article>
-          <article><span class="term-index">03 / ROUTE</span><h3>Card network</h3><p>The network, such as Visa or Mastercard, that routes messages between the two sides.</p></article>
-          <article><span class="term-index">04 / SERVICE</span><h3>Payment provider</h3><p>The service the store connects to for checkout and payment processing. Its exact role varies.</p></article>
-          <article><span class="term-index">05 / CHECK</span><h3>3-D Secure</h3><p>An extra way for the issuer to check the shopper’s identity when needed.</p></article>
-          <article><span class="term-index">06 / MESSAGE</span><h3>Webhook</h3><p>A server-to-server update that tells the store when a payment changes state.</p></article>
-          <article><span class="term-index">07 / RETRY</span><h3>Idempotency key</h3><p>A unique label that helps the provider recognize a repeated request.</p></article>
-          <article><span class="term-index">08 / RECORD</span><h3>Outbox</h3><p>A database table that holds events to send after the order record changes.</p></article>
-          <article><span class="term-index">09 / EVENT STREAM</span><h3>Kafka</h3><p>A tool that can pass events to other store services. It is optional in this example.</p></article>
-        </div>
-      </section>
+    <section id="software" class="software" aria-labelledby="software-title">
+      <div class="section-heading"><p class="eyebrow">ONE POSSIBLE STORE SETUP</p><h2 id="software-title">Where the tools fit</h2><p>The store builds the order flow. The provider and banks handle the card route.</p></div>
+      <div class="software-list">
+        <div><span>01</span><div><h3>Checkout</h3><p>A provider-controlled card form, such as Stripe Payment Element, collects card details. The store API creates the order and payment request.</p></div></div>
+        <div><span>02</span><div><h3>Payment state</h3><p>A verified webhook updates the order in PostgreSQL. Idempotency keys and safe event handling help with retries.</p></div></div>
+        <div><span>03</span><div><h3>Events, if needed</h3><p>As the store grows, an outbox can send a paid-order event to Kafka. Workers use it for fulfillment, email, or analytics. The issuer still decides whether to approve the card.</p></div></div>
+      </div>
+    </section>
 
-      <section class="closing-section"><div class="section-wrap closing-inner"><div><span class="closing-kicker">YOU HAVE THE WHOLE PICTURE</span><h2>Seven parts. One payment.<br /><em>Now every handoff has a reason.</em></h2></div><a class="button button-dark" href="#builder">Walk through it again <span aria-hidden="true">↗</span></a></div></section>
-    </main>
-
-    <footer class="site-footer section-wrap"><div><a class="wordmark footer-wordmark" href="../../"><span class="wordmark-mark" aria-hidden="true"><span></span><span></span></span><span>SYSTEMS<span class="wordmark-slash">/</span>ZERO</span></a><p>One system at a time, built from the first sketch to the full flow.</p></div><div class="source-list"><span>SOURCES FOR THIS GUIDE</span><a href="https://developer.visa.com/docs/visanet-connect-acceptance" target="_blank" rel="noopener noreferrer">Visa: authorization, capture and settlement ↗</a><a href="https://docs.stripe.com/payments/payment-element" target="_blank" rel="noopener noreferrer">Stripe: hosted payment form ↗</a><a href="https://docs.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">Stripe: webhook events ↗</a><a href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener noreferrer">Stripe: safe retries ↗</a><a href="https://kafka.apache.org/intro/" target="_blank" rel="noopener noreferrer">Apache Kafka: event streaming ↗</a><a href="https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html" target="_blank" rel="noopener noreferrer">Debezium: outbox pattern ↗</a></div><p class="footer-fine">Educational overview. Specific integrations and timing vary by provider, card network, and region. The software stack is an example, not a required setup.</p></footer>
-  </body>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>Issuer</strong> The shopper's card bank; it approves or declines.</p>
+        <p><strong>Acquirer</strong> The store's bank or acquiring partner.</p>
+        <p><strong>Card network</strong> Routes messages between the two sides.</p>
+        <p><strong>3-D Secure</strong> An extra check of the shopper's identity when needed.</p>
+        <p><strong>Authorization</strong> The decision to approve or decline; an approval usually places a hold.</p>
+        <p><strong>Capture, clearing, settlement</strong> Submit the approved charge, exchange transaction records, then move funds.</p>
+        <p><strong>Webhook</strong> A server-to-server update from the provider.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is a teaching model of a typical online card purchase. Routes and timing vary by provider and region. The software choices above are examples.</p>
+        <ul>
+          <li><a href="https://developer.visa.com/docs/visanet-connect-acceptance" target="_blank" rel="noopener noreferrer">Visa: payment lifecycle</a></li>
+          <li><a href="https://docs.stripe.com/payments/payment-element" target="_blank" rel="noopener noreferrer">Stripe: Payment Element</a></li>
+          <li><a href="https://docs.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">Stripe: webhooks</a></li>
+          <li><a href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener noreferrer">Stripe: idempotent requests</a></li>
+          <li><a href="https://kafka.apache.org/intro/" target="_blank" rel="noopener noreferrer">Apache Kafka: event streaming</a></li>
+          <li><a href="https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html" target="_blank" rel="noopener noreferrer">Debezium: outbox pattern</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
 </html>
