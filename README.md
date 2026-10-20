@@ -1,6 +1,6 @@
-# Card Flow
+# Systems from Zero
 
-An interactive explanation of how an online debit or credit card payment works. The site starts with a shopper and a store, then adds checkout, payment routing, authentication, authorization, money movement, reliable state, and after-payment handling.
+A growing library of visual guides to how complex systems work. Each guide starts with the smallest useful version and adds components one at a time. The first guide covers online debit and credit card payments.
 
 ## Open locally
 
@@ -8,13 +8,17 @@ Open `index.html` in a browser. The site uses plain HTML, CSS, and JavaScript, s
 
 ## Project files
 
-- `index.html` — page content and source links
-- `styles.css` — layout, responsive styles, and motion
-- `app.js` — the eight interactive steps and approve/decline example
-- `favicon.svg` — site icon
+- `index.html` and `home.css` — collection homepage
+- `guides/card-payments/index.html` — first guide
+- `styles.css` and `app.js` — card guide styles and eight interactive steps
+- `favicon.svg` — shared site icon
 
-The diagrams are a teaching model of a typical online card payment. Providers and regions can use different routes or timing. The footer links to Visa and Stripe documentation for the core payment stages.
+The card guide's diagrams are a teaching model of a typical online card payment. Providers and regions can use different routes or timing. The guide footer links to Visa and Stripe documentation for the core payment stages.
+
+## Adding a guide
+
+Give each new topic its own folder under `guides/` with an `index.html`, then add a link to it in the homepage's guide section. Keep the root page about the collection rather than one topic.
 
 ## Publishing
 
-After you create the repository in your Git organization and push these files, a static host can serve `index.html` from the repository root. No environment variables or payment credentials are needed; this is an educational site, not a payment processor.
+Cloudflare Pages can serve the repository root directly. Use no framework, production branch `main`, build command `exit 0`, build output directory `.`, and leave the root directory unset. No environment variables or payment credentials are needed; this is an educational site, not a payment processor.
