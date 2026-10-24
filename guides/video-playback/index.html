@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Follow one video from a playable MP4 to byte ranges, HLS segments, adaptive quality, and CDN delivery.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <script src="guide-data.js" defer></script>
+  <script src="guide.js" defer></script>
+  <title>Video playback before full download | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to video flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 05 · VIDEO</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 05 / VIDEO</p>
+      <h1>How does a video start playing before the whole file downloads?</h1>
+      <p>Follow one 90-second clip. First, make an MP4 play from its opening bytes. Then add HLS for quality switching and a CDN for a crowd of viewers.</p>
+      <div class="intro-meta"><span>16 concrete steps</span><span>One clip, two playback routes</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+    <section id="flow" class="flow" aria-label="Build the video playback flow">
+      <div class="flow-top"><div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 16</span></div><div class="progress" aria-hidden="true"><span id="progress-fill"></span></div></div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Video playback steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2><p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Video system parts added so far">
+            <div class="diagram-heading"><strong>PARTS ADDED SO FAR</strong><span>The active parts are highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="Capabilities added so far"></div>
+          </div>
+          <div class="handoff"><h3>At this moment</h3><dl>
+            <div><dt>From</dt><dd id="handoff-from"></dd></div><div><dt>To</dt><dd id="handoff-to"></dd></div>
+            <div><dt>Data</dt><dd id="handoff-message"></dd></div><div><dt>Result</dt><dd id="handoff-state"></dd></div>
+          </dl></div>
+          <div class="explanation"><div><h3>Why add this?</h3><p id="step-why"></p></div><div><h3>What would you build?</h3><p id="step-tech"></p></div></div>
+          <details class="inspect"><summary>Inspect this step</summary><div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video" target="_blank" rel="noopener noreferrer"></a></div></details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next step →</button></div>
+        </article>
+      </div>
+    </section>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">Two ways to play the same clip</h2><p>The first route already starts before full download. HLS adds quality choices; the CDN serves repeated requests.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / PROGRESSIVE MP4</span><p>Playable MP4 <b>→</b> HTTP origin <b>→</b> browser video element <b>→</b> initial bytes <b>→</b> decoded first frame</p><small>A seek may request a later byte range. The origin needs correct MP4 delivery and range support.</small></div>
+        <div><span>02 / HLS PREPARATION</span><p>Source video <b>→</b> encoder: 360p / 720p / 1080p <b>→</b> aligned segments + playlists <b>→</b> object storage</p><small>Upload the media first. Publish playlists and mark the clip ready after every referenced file exists.</small></div>
+        <div><span>03 / HLS PLAYBACK</span><p>Browser player <b>→</b> CDN <b>→</b> master playlist <b>→</b> chosen media playlist <b>→</b> init + segment <b>→</b> decoder</p><small>Later requests can choose another quality or time. A CDN miss fetches from storage; a hit serves cached bytes.</small></div>
+      </div>
+      <p class="trace"><strong>Trace this clip:</strong> 90-second source → clip.mp4 → /hls/clip/master.m3u8 → 720p/index.m3u8 → 720p/init.mp4 + 720p/seg000.m4s → first frame <span>Paths, bitrates, resolutions, and a four-second target are examples. This guide follows on-demand video.</span></p>
+    </section>
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">BUILD IT IN STAGES</p><h2 id="blueprint-title">Each stage solves a new problem</h2><p>The HLS path is a second delivery design for the same clip, introduced only after the MP4 works.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / WORKING</span><h3>Progressive MP4</h3><p>Encode a browser-compatible MP4, move its metadata forward, serve it with range support, and confirm that first-frame playback and seeking work.</p></article>
+        <article><span>02 / VARIABLE NETWORKS</span><h3>HLS variants</h3><p>Encode several rates, cut aligned segments, publish playlists, then let the player fetch and switch future segments by network conditions.</p></article>
+        <article><span>03 / MANY VIEWERS</span><h3>CDN and recovery</h3><p>Cache immutable segment files close to viewers. Measure startup and stalls, retry short network failures, and report missing packages.</p></article>
+      </div>
+      <div class="state-model"><strong>Three states that should not be mixed up</strong>
+        <p><span>Published</span> All files named by the playlists exist.</p>
+        <p><span>Buffered</span> The player has media for a span of playback time.</p>
+        <p><span>Playing</span> The decoder is producing pictures and sound.</p>
+        <small>A 200 response for a playlist does not mean any frame has decoded. A full file download is not required for playback.</small>
+      </div>
+      <details class="reference-detail"><summary>Exact progressive MP4 exchange</summary><div class="reference-body">
+        <p><strong>Page:</strong> &lt;video controls preload="metadata" src="/media/clip.mp4"&gt;&lt;/video&gt;. The preload value is a browser hint.</p>
+        <p><strong>Possible request:</strong> GET /media/clip.mp4 with Range: bytes=0-1048575. A browser may also make a plain GET or choose another range.</p>
+        <p><strong>Range response:</strong> 206 Partial Content; Content-Range: bytes 0-1048575/12000000; Content-Type: video/mp4. The next request can ask for another range. If the origin ignores Range, it may return 200 with the whole file.</p>
+        <p><strong>Seek:</strong> For 00:45, the browser uses MP4 sample timing and keyframes to locate a useful byte position. Time is not converted to bytes by a simple percentage.</p>
+      </div></details>
+      <details class="reference-detail"><summary>What the HLS files contain</summary><div class="reference-body">
+        <p><strong>master.m3u8:</strong> #EXTM3U followed by an #EXT-X-STREAM-INF entry for each quality, including BANDWIDTH, CODECS, and RESOLUTION, then that quality's media playlist URL.</p>
+        <p><strong>720p/index.m3u8:</strong> #EXTM3U, #EXT-X-VERSION:7, #EXT-X-TARGETDURATION:4, #EXT-X-PLAYLIST-TYPE:VOD, #EXT-X-MAP:URI="init.mp4", then #EXTINF:4.000, and seg000.m4s. Later segments follow. An on-demand playlist ends with #EXT-X-ENDLIST.</p>
+        <p><strong>720p/init.mp4:</strong> fMP4 initialization data. <strong>seg000.m4s:</strong> encoded media for an opening time span. The player needs both before it can decode that fMP4 segment.</p>
+        <p><strong>Boundary check:</strong> A four-second target does not guarantee every segment is exactly four seconds. Put suitable keyframes at intended cut points and check that variant timelines align.</p>
+      </div></details>
+      <details class="reference-detail"><summary>How a player chooses the next file</summary><div class="reference-body">
+        <p><strong>Start:</strong> Get the master playlist, select a supported bitrate, get its media playlist, then request init data and the first segment. A native HLS stack or JavaScript player feeds the decoder.</p>
+        <p><strong>Continue:</strong> Keep some media ahead of the playhead. Compare measured download rate and buffer with each variant's bitrate. Request a lower or higher quality for a future aligned segment.</p>
+        <p><strong>Seek:</strong> Find the segment whose time span includes the new position, fetch from a decodable boundary, and discard or replace unneeded buffered data. The exact buffer policy belongs to the player.</p>
+        <p><strong>Browser support:</strong> Native HLS and MSE-based players differ by browser and device. Test the actual codecs and player path you ship.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Failure drill and measures</summary><div class="reference-body">
+        <p><strong>MP4 starts slowly:</strong> Check codec support, MP4 metadata location, origin response, first-byte time, and first-frame time separately.</p>
+        <p><strong>HLS segment is slow:</strong> If buffer is shrinking, choose a lower bitrate for a later segment; retry a transient request with a finite limit.</p>
+        <p><strong>Segment is 404:</strong> Check publication order, object path, playlist URL, and CDN cache. A lower bitrate only helps if its matching segment exists.</p>
+        <p><strong>Decode fails after a switch:</strong> Inspect codec declarations, timestamps, keyframes, and the matching init file for both renditions.</p>
+        <p><strong>Measure:</strong> play-to-first-frame time, startup failure rate, rebuffer count and duration, selected bitrate, segment HTTP status, CDN hit rate, and seek delay.</p>
+      </div></details>
+    </section>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>Progressive MP4</strong> One MP4 delivered over HTTP; playback may begin before its full body arrives.</p>
+        <p><strong>Range request</strong> An HTTP request for selected bytes of a file.</p>
+        <p><strong>Keyframe</strong> A frame suitable for starting video decoding without earlier predicted frames.</p>
+        <p><strong>HLS</strong> HTTP Live Streaming: playlists point to short media segments.</p>
+        <p><strong>Rendition / variant</strong> One encoded quality of the same timeline, such as 720p at a stated bitrate.</p>
+        <p><strong>fMP4</strong> Fragmented MP4: an initialization section plus media fragments.</p>
+        <p><strong>Adaptive bitrate</strong> Choosing later segments at a bitrate that fits current conditions.</p>
+        <p><strong>CDN</strong> A network of caches that can serve repeated HTTP files closer to viewers.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is a teaching design for an on-demand 90-second clip. The paths, quality ladder, segment target, and player rules are examples, not claims about a particular video service. Live streaming, DRM, captions, advertising, and access control add separate flows.</p>
+        <ul>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Element/video" target="_blank" rel="noopener noreferrer">MDN: video element</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/preload" target="_blank" rel="noopener noreferrer">MDN: preload hint</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Range_requests" target="_blank" rel="noopener noreferrer">MDN: HTTP ranges</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Audio_and_video_delivery/buffering_seeking_time_ranges" target="_blank" rel="noopener noreferrer">MDN: buffered time ranges</a></li>
+          <li><a href="https://ffmpeg.org/ffmpeg-all.html" target="_blank" rel="noopener noreferrer">FFmpeg: MP4 faststart</a></li>
+          <li><a href="https://ffmpeg.org/ffmpeg-formats.html" target="_blank" rel="noopener noreferrer">FFmpeg: HLS segments and keyframes</a></li>
+          <li><a href="https://www.rfc-editor.org/rfc/rfc8216" target="_blank" rel="noopener noreferrer">RFC 8216: HLS syntax</a></li>
+          <li><a href="https://developer.apple.com/documentation/http-live-streaming" target="_blank" rel="noopener noreferrer">Apple: HLS overview</a></li>
+          <li><a href="https://developer.apple.com/documentation/http-live-streaming/hls-authoring-specification-for-apple-devices/" target="_blank" rel="noopener noreferrer">Apple: HLS authoring</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/Media_Source_Extensions_API" target="_blank" rel="noopener noreferrer">MDN: MSE playback</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/ConfiguringCaching.html" target="_blank" rel="noopener noreferrer">AWS: CDN caching</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>
