@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Build a chat delivery system from one message: WebSocket, PostgreSQL, receipts, offline sync, push, and Kafka.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <script src="guide-data.js" defer></script>
+  <script src="guide.js" defer></script>
+  <title>Chat message delivery | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to chat flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 03 · CHAT</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 03 / CHAT</p>
+      <h1>How does a chat message get delivered?</h1>
+      <p>Asha sends Ravi “On my way.” Start with two devices and one server. Add storage, receipts, offline recovery, and scale only when the flow needs them.</p>
+      <div class="intro-meta"><span>13 concrete steps</span><span>One message, three distinct states</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+    <section id="flow" class="flow" aria-label="Build the chat delivery flow">
+      <div class="flow-top"><div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 13</span></div><div class="progress" aria-hidden="true"><span id="progress-fill"></span></div></div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Chat delivery steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2><p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Chat system parts">
+            <div class="diagram-heading"><strong>PARTS ADDED SO FAR</strong><span>The active parts are highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="Capabilities added so far"></div>
+          </div>
+          <div class="handoff"><h3>At this moment</h3><dl>
+            <div><dt>From</dt><dd id="handoff-from"></dd></div><div><dt>To</dt><dd id="handoff-to"></dd></div>
+            <div><dt>Data</dt><dd id="handoff-message"></dd></div><div><dt>Result</dt><dd id="handoff-state"></dd></div>
+          </dl></div>
+          <div class="explanation"><div><h3>Why add this?</h3><p id="step-why"></p></div><div><h3>What would you build?</h3><p id="step-tech"></p></div></div>
+          <details class="inspect"><summary>Inspect this step</summary><div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API" target="_blank" rel="noopener noreferrer"></a></div></details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next step →</button></div>
+        </article>
+      </div>
+    </section>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">One message, three paths</h2><p>The database is the shared record. Live sockets and push tell devices that record changed.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / ACCEPT AND SAVE</span><p>Asha device <b>→</b> WSS gateway <b>→</b> auth + membership <b>→</b> PostgreSQL commit <b>→</b> sender ACK</p><small>The server ACK means saved. A socket send alone does not mean accepted.</small></div>
+        <div><span>02 / DELIVER WHILE ONLINE</span><p>Saved message <b>→</b> Ravi's socket <b>→</b> device store <b>→</b> delivery ACK <b>→</b> optional read event</p><small>Delivered and read are application states reported by Ravi's device.</small></div>
+        <div><span>03 / RECOVER WHEN OFFLINE</span><p>Saved message <b>→</b> optional push hint <b>→</b> reconnect <b>→</b> fetch after cursor <b>→</b> dedupe + ACK</p><small>Push can be delayed or lost. The catch-up query closes the gap.</small></div>
+      </div>
+      <p class="trace"><strong>Trace one message:</strong> client_message_id=asha-73 → server message_id=m-918, conversation=c-42, seq=18 → Ravi device ACK at seq=18 <span>These are teaching IDs and a proposed application protocol, not values from a real chat service.</span></p>
+    </section>
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">BUILD IT IN STAGES</p><h2 id="blueprint-title">The smallest useful system, then the hard parts</h2><p>Each stage fixes a failure exposed by the previous one.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / WORKING</span><h3>One app server</h3><p>Use WSS for live messages and PostgreSQL for conversations, members, and messages. Save before replying to Asha. Route to Ravi if connected.</p></article>
+        <article><span>02 / RELIABLE</span><h3>Retries and catch-up</h3><p>Add a stable client message ID, uniqueness rule, per-conversation sequence, device cursor, delivery ACK, and reconnect sync. Add push as a wake hint.</p></article>
+        <article><span>03 / GROWING</span><h3>Many gateways</h3><p>Track which gateway holds each live device. Add a database outbox and Kafka when workers or gateways need committed events. Consumers still dedupe and clients still sync.</p></article>
+      </div>
+      <div class="state-model"><strong>The three states are separate</strong>
+        <p><span>Sent</span> PostgreSQL committed; Asha has the server ACK.</p>
+        <p><span>Delivered</span> at least one Ravi device saved the message and acknowledged it.</p>
+        <p><span>Read</span> a Ravi device reported that the conversation reached this message.</p>
+        <small>These are this example's product rules. “Read” reports an app event, not proof a person understood the text. Multi-device products may choose different receipt rules.</small>
+      </div>
+      <details class="reference-detail"><summary>Records and constraints</summary><div class="reference-body">
+        <p><strong>conversations:</strong> id, next_seq. Lock its row while assigning the next message number.</p>
+        <p><strong>members:</strong> conversation_id, user_id, membership state. Check membership again in the save transaction if removal can race a send.</p>
+        <p><strong>messages:</strong> message_id, conversation_id, seq, sender_id, client_message_id, body, created_at. Enforce unique (conversation_id, seq) and unique (sender_id, client_message_id). Keep IDs and sequence values non-null.</p>
+        <p><strong>device_cursors:</strong> device_id, conversation_id, highest contiguous seq saved. Store delivery and read receipts separately if the product displays them.</p>
+        <p><strong>outbox, at scale:</strong> event_id, conversation_id, message_id, seq. Insert with the message in the same transaction; publish after commit.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Exact save and catch-up algorithms</summary><div class="reference-body">
+        <p><strong>Send transaction:</strong></p>
+        <ol>
+          <li>Read the authenticated user from the socket session. Validate the payload before opening a database transaction.</li>
+          <li>Begin a transaction and lock the c-42 conversation row. Confirm that Asha is still a member.</li>
+          <li>Look up (Asha, asha-73). If it exists, verify the original conversation and body, then return its message ID and sequence after the transaction ends.</li>
+          <li>If absent, take next_seq as the new sequence, increment next_seq, and insert the message. At scale, insert its outbox event in this same transaction.</li>
+          <li>Commit. Send Asha the server ACK. Route the committed message to Ravi's connected devices.</li>
+        </ol>
+        <p><strong>Catch-up:</strong> Ravi sends his last contiguous saved sequence for c-42. Check membership, query later messages in sequence order with a page limit, and send the page. Ravi saves each unseen message by message_id, advances his cursor only through contiguous sequences, and acknowledges stored messages. Repeat until caught up.</p>
+        <p><strong>Client ID:</strong> use a random unique value in a real app. The short IDs here make the trace easy to read.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Failure drill</summary><div class="reference-body">
+        <p><strong>ACK lost after commit:</strong> Asha retries the same client_message_id; return the existing message_id and seq.</p>
+        <p><strong>Ravi's socket closes:</strong> keep the saved row. Reconnect fetches messages after the device's last contiguous seq.</p>
+        <p><strong>Push is late or dropped:</strong> chat remains in PostgreSQL. A later app open runs the same catch-up query.</p>
+        <p><strong>Two sends race:</strong> one conversation row lock serializes sequence assignment. Render by seq, not client timestamps.</p>
+        <p><strong>Worker handles an event twice:</strong> identify it by event_id or message_id and make the consumer safe to retry.</p>
+      </div></details>
+      <details class="reference-detail"><summary>How delivery works across many gateways</summary><div class="reference-body">
+        <p><strong>Connection directory:</strong> when Ravi's device connects, its gateway records device_id → gateway_id in a shared store such as Redis. Renew a short expiry while the socket is alive. A stale entry only means a live attempt can fail; reconnect sync still repairs the gap.</p>
+        <p><strong>Committed event:</strong> the message transaction also writes an outbox row. A relay publishes that row to Kafka with conversation_id as key, so one conversation's events land in one partition under a stable partition layout.</p>
+        <p><strong>Final hop:</strong> a worker reads the event, finds Ravi's connected devices, and forwards m-918 to their gateways. Each gateway writes to its local sockets. Devices dedupe by message_id and ACK after saving.</p>
+        <p><strong>Ordering:</strong> Kafka orders events inside a partition. The chat UI still orders by the PostgreSQL sequence; it must tolerate duplicate or late event delivery.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Security and optional features</summary><div class="reference-body">
+        <p><strong>Transport:</strong> WSS protects the device-to-server connection. Authorize each socket and each conversation action. Limit message size and send rate.</p>
+        <p><strong>End-to-end encryption:</strong> requires client key management and encrypted message bodies. WSS alone is not end-to-end encryption; a server holding plaintext can read it.</p>
+        <p><strong>Attachments:</strong> store file bytes in object storage and send a reference in the message after upload and access checks. That is a separate flow.</p>
+        <p><strong>Deletion and retention:</strong> define how clients advance past removed sequence numbers, for example with a tombstone. Do not silently skip a missing message.</p>
+      </div></details>
+    </section>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>WSS</strong> WebSocket over TLS: a live two-way connection.</p>
+        <p><strong>Server ACK</strong> An application reply after the database commit.</p>
+        <p><strong>Client message ID</strong> A stable ID made by the sending device and reused on retry.</p>
+        <p><strong>Sequence</strong> The server's order for messages in one conversation.</p>
+        <p><strong>Cursor</strong> The last contiguous message sequence saved by one device.</p>
+        <p><strong>Delivery ACK</strong> A recipient device's report that it saved a message.</p>
+        <p><strong>Outbox</strong> A database row recording an event to publish after the same transaction commits.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is a buildable teaching design for a one-to-one chat. The IDs, protocol messages, receipt meanings, and tables are defined for this example; they do not describe any company's private implementation. WebSocket, PostgreSQL, FCM, Debezium, and Kafka documentation support the stated behavior of those tools. Push and Kafka are optional additions.</p>
+        <ul>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API" target="_blank" rel="noopener noreferrer">MDN: WebSocket API</a></li>
+          <li><a href="https://www.postgresql.org/docs/current/ddl-constraints.html" target="_blank" rel="noopener noreferrer">PostgreSQL: unique constraints</a></li>
+          <li><a href="https://www.postgresql.org/docs/current/explicit-locking.html" target="_blank" rel="noopener noreferrer">PostgreSQL: row locks</a></li>
+          <li><a href="https://firebase.google.com/docs/cloud-messaging/customize-messages/setting-message-lifespan" target="_blank" rel="noopener noreferrer">Firebase: message delivery and expiry</a></li>
+          <li><a href="https://firebase.google.com/docs/cloud-messaging/customize-messages/collapsible-message-types" target="_blank" rel="noopener noreferrer">Firebase: ordering and collapsible hints</a></li>
+          <li><a href="https://firebase.google.com/docs/cloud-messaging/android/receive-messages" target="_blank" rel="noopener noreferrer">Firebase: receiving messages on Android</a></li>
+          <li><a href="https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html" target="_blank" rel="noopener noreferrer">Debezium: outbox event routing</a></li>
+          <li><a href="https://kafka.apache.org/documentation/" target="_blank" rel="noopener noreferrer">Apache Kafka: partition ordering</a></li>
+          <li><a href="https://redis.io/docs/latest/commands/expire/" target="_blank" rel="noopener noreferrer">Redis: expiring connection directory entries</a></li>
+          <li><a href="https://signal.org/docs/specifications/doubleratchet/" target="_blank" rel="noopener noreferrer">Signal: end-to-end message encryption design</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>
