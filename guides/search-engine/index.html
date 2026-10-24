@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Build a small web search engine from a table scan through crawling, inverted indexing, BM25 ranking, snippets, recrawling, and shards.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <link rel="stylesheet" href="guide.css">
+  <script src="guide-data.js" defer></script>
+  <script src="guide.js" defer></script>
+  <title>How a search engine finds and ranks results | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to search flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 06 · SEARCH</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 06 / SEARCH</p>
+      <h1>How does a search engine find and rank results?</h1>
+      <p>Nina searches “grow basil indoors.” First search three saved pages. Then build the crawler, index, ranking, and recovery paths needed as the collection grows.</p>
+      <div class="intro-meta"><span>17 concrete steps</span><span>One query, from first scan to distributed search</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+    <section id="flow" class="flow" aria-label="Build the search engine flow">
+      <div class="flow-top"><div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 17</span></div><div class="progress" aria-hidden="true"><span id="progress-fill"></span></div></div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Search engine steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2><p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Search engine parts added so far">
+            <div class="diagram-heading"><strong>PARTS ADDED SO FAR</strong><span>The active parts are highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="Capabilities added so far"></div>
+          </div>
+          <div class="handoff"><h3>At this moment</h3><dl>
+            <div><dt>From</dt><dd id="handoff-from"></dd></div><div><dt>To</dt><dd id="handoff-to"></dd></div>
+            <div><dt>Data</dt><dd id="handoff-message"></dd></div><div><dt>Result</dt><dd id="handoff-state"></dd></div>
+          </dl></div>
+          <div class="explanation"><div><h3>Why add this?</h3><p id="step-why"></p></div><div><h3>What would you build?</h3><p id="step-tech"></p></div></div>
+          <details class="inspect"><summary>Inspect this step</summary><div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://developers.google.com/search/docs/fundamentals/how-search-works" target="_blank" rel="noopener noreferrer"></a></div></details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next step →</button></div>
+        </article>
+      </div>
+    </section>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">Two flows meet at the index</h2><p>The crawler prepares pages before anyone searches. A query reads the prepared index and returns a ranked page of results.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / FIRST VERSION</span><p>Three saved pages <b>→</b> PostgreSQL scan <b>→</b> simple overlap score <b>→</b> Nina's browser</p><small>Working search for a tiny collection. The pages were loaded by hand.</small></div>
+        <div><span>02 / CRAWL BEFORE QUERY</span><p>Known links + sitemaps <b>→</b> URL frontier <b>→</b> robots check + paced fetch <b>→</b> extract + noindex + deduplicate</p><small>Discovery, fetch, and indexing decisions are separate. A discovered URL may never become a result.</small></div>
+        <div><span>03 / BUILD THE INDEX</span><p>Canonical document <b>→</b> OpenSearch analyzer <b>→</b> term postings <b>→</b> searchable index</p><small>Use the canonical document ID for updates and deletions. The index is derived from crawler records.</small></div>
+        <div><span>04 / ANSWER THE QUERY</span><p>Nina <b>→</b> Search API <b>→</b> analyzed query + postings <b>→</b> BM25 + title weight <b>→</b> source checks <b>→</b> snippet + result</p><small>Shards later split this work across nodes; they do not change the user's query path.</small></div>
+      </div>
+      <p class="trace"><strong>Trace Nina's query:</strong> grow basil indoors → [grow, basil, indoors] → candidate IDs d1, d2, d3 → scored top hits → title + URL + snippet <span>Example documents and URLs are invented for teaching. Scores and order beyond the strongest match depend on the indexed corpus and ranking choices.</span></p>
+    </section>
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">BUILD IT IN STAGES</p><h2 id="blueprint-title">Add the next part when the old route breaks</h2><p>The query never crawls the live web while Nina waits.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / WORKING</span><h3>Table scan</h3><p>Save three pages by hand in PostgreSQL. Scan them for query words and show a title, URL, and preview.</p></article>
+        <article><span>02 / FIND AND RANK</span><h3>Crawler + index</h3><p>Discover and fetch permitted pages, extract one representative document, then use OpenSearch postings and BM25 to answer quickly.</p></article>
+        <article><span>03 / KEEP GROWING</span><h3>Recrawl + shards</h3><p>Update or delete stale results, let workers share a durable frontier, and split the search index only when one node is no longer enough.</p></article>
+      </div>
+      <div class="state-model"><strong>A URL has several different milestones</strong>
+        <p><span>Discovery</span> DISCOVERED → DUE → LEASED → FETCHED or RETRY_AT.</p>
+        <p><span>Index decision</span> Indexable → canonical document → indexed, or excluded.</p>
+        <p><span>Query</span> Candidate → scored hit → shown result.</p>
+        <small>A 200 response does not guarantee indexing. Indexing does not guarantee that a page matches a particular query or appears in its top results.</small>
+      </div>
+      <details class="reference-detail"><summary>The three documents and exact postings</summary><div class="reference-body">
+        <div class="record"><strong>d1 · /basil</strong><span>Title: “Grow basil indoors.” Body: “Basil needs bright light indoors. Grow it near a window.”</span></div>
+        <div class="record"><strong>d2 · /indoor-herbs</strong><span>Title: “Indoor herb guide.” Body: “Basil indoors needs bright light.”</span></div>
+        <div class="record"><strong>d3 · /basil-pruning</strong><span>Title: “Pruning basil outside.” Body: “Grow basil outdoors and trim its stems.”</span></div>
+        <p><strong>First table scan:</strong> Count distinct query words across title and body; break ties by title matches. d1 scores 3 words, d3 scores 2 with a title match, and d2 scores 2 without one. The first version shows d1, d3, d2. This is a teaching rule, not BM25.</p>
+        <p><strong>After lowercasing and splitting terms:</strong> basil → d1,d2,d3; indoors → d1,d2; grow → d1,d3. These are simplified posting lists across title and body. A real index keeps field-specific postings and more information such as term frequency and positions.</p>
+        <p><strong>Candidate policy:</strong> OR across the three terms retrieves d1,d2,d3. d1 matches all three; the actual BM25 scores depend on collection statistics and field settings. The page does not claim fixed scores for this example.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Exact search request</summary><div class="reference-body">
+        <p>The app can ask OpenSearch for 50 text candidates with a modest title weight, apply bounded source checks, then show ten results. This example uses the default best_fields form of multi_match and a body highlight.</p>
+        <pre><code>POST /pages/_search
+{
+  "size": 50,
+  "query": {
+    "multi_match": {
+      "query": "grow basil indoors",
+      "fields": ["title^2", "body"],
+      "operator": "or"
+    }
+  },
+  "highlight": {"fields": {"body": {}}}
+}</code></pre>
+        <p><strong>Response handling:</strong> Read _id, _score, canonical URL, title, and optional highlight fragment for each candidate. Apply the stated source checks, then return ten. Escape untrusted page text before rendering. Return an empty state if there are no hits; surface timeout or shard failure instead of silently pretending the whole index was searched.</p>
+      </div></details>
+      <details class="reference-detail"><summary>What the text score misses</summary><div class="reference-body">
+        <p><strong>Language:</strong> This worked search is in English, so its serving policy keeps English results. Multilingual search would need language-aware matching and evaluation.</p>
+        <p><strong>Links:</strong> The crawler can count distinct external hosts that link to a page. A small capped tie-breaker may help near-equal text matches, but raw link count is easy to manipulate and cannot prove a claim is true.</p>
+        <p><strong>Abuse:</strong> Keep a reviewed exclusion policy for confirmed malicious or deceptive results. Keyword stuffing and link spam are examples of why a strong text score is insufficient.</p>
+        <p><strong>Freshness:</strong> Re-crawl to keep documents current. Prefer recent documents only when the query calls for recent information; basil care does not become better solely because a page is newer.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Exact crawler records and decisions</summary><div class="reference-body">
+        <p><strong>frontier:</strong> normalized_url, host, discovered_from, state, next_fetch_at, lease_until, attempts, last_status. Unique normalized_url prevents repeated queue rows.</p>
+        <p><strong>documents:</strong> doc_id, fetched_url, canonical_url, title, body, language, content_hash, fetched_at, indexable, extraction_version. The canonical document ID is also the OpenSearch _id.</p>
+        <p><strong>HTTP path:</strong> GET /robots.txt → check current URL → wait for host slot → GET page → record status and final URL → parse HTML and links → apply noindex and duplicate grouping → upsert or delete index entry.</p>
+        <p><strong>robots.txt:</strong> It controls fetch access. A page-level noindex must be fetched to be seen. Neither is a password system. A sitemap is a URL suggestion, not a promise to crawl or index.</p>
+        <p><strong>Redirects and untrusted URLs:</strong> Validate each new destination, block internal networks and metadata endpoints, cap redirects, response size, and time. A crawler must not turn public links into access to its own private network.</p>
+      </div></details>
+      <details class="reference-detail"><summary>How two crawl workers avoid taking the same job</summary><div class="reference-body">
+        <p>In one PostgreSQL transaction, claim one due frontier row and give it a lease. A second worker skips that locked row. The separate host scheduler still decides when the URL may be fetched.</p>
+        <pre><code>WITH picked AS (
+  SELECT normalized_url FROM frontier
+  WHERE (state IN ('DISCOVERED', 'DUE', 'RETRY_AT')
+         AND next_fetch_at &lt;= now())
+     OR (state = 'LEASED' AND lease_until &lt; now())
+  ORDER BY next_fetch_at
+  LIMIT 1
+  FOR UPDATE SKIP LOCKED
+)
+UPDATE frontier AS f
+SET state = 'LEASED', lease_until = now() + interval '2 minutes'
+FROM picked
+WHERE f.normalized_url = picked.normalized_url
+RETURNING f.normalized_url;</code></pre>
+        <p><strong>After the claim:</strong> Commit, reserve a host slot, fetch, and report the outcome. If no host slot is available, release or reschedule the job. If the worker dies, its lease expires and another worker may try. The two-minute lease is a teaching choice; a slow fetch can outlive it, so updates must be safe to repeat.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Ranking limits and failure drill</summary><div class="reference-body">
+        <p><strong>No result:</strong> Check whether the URL was discovered, allowed, fetched, indexable, canonicalized, indexed, and finally matched. Each stage has a separate reason for absence.</p>
+        <p><strong>Wrong result first:</strong> Inspect analyzer tokens and OpenSearch score explanation. Evaluate title weight on a fixed judged set; do not assume a high text score means the page is trustworthy.</p>
+        <p><strong>Dead result:</strong> Recrawl. Remove a confirmed 404/410 or noindex page from the index; retry a transient timeout or 5xx rather than deleting immediately.</p>
+        <p><strong>Stale result after update:</strong> Compare document and index versions, then wait for index refresh or reconcile a failed update. Search is near real time, not an instant view of every crawl write.</p>
+        <p><strong>Slow query:</strong> Inspect candidate count, query time, highlight cost, and shard load. More shards consume resources and should follow measurement.</p>
+      </div></details>
+    </section>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>Frontier</strong> The durable list of URLs waiting to be fetched or revisited.</p>
+        <p><strong>Crawl</strong> Fetch a page from its host, subject to crawl rules and rate limits.</p>
+        <p><strong>Index</strong> Analyze a chosen page and store searchable terms and document data.</p>
+        <p><strong>Canonical URL</strong> The representative URL for a group of duplicate or near-duplicate pages.</p>
+        <p><strong>Analyzer</strong> The rules that turn text into searchable terms.</p>
+        <p><strong>Inverted index</strong> A map from term to documents containing that term.</p>
+        <p><strong>Posting</strong> A term's entry for one document, possibly including frequency and positions.</p>
+        <p><strong>BM25</strong> A text relevance score based on term frequency, rarity, and field length.</p>
+        <p><strong>Shard</strong> A portion of the index that can live on one search node; a replica is another copy.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is an illustrative small public-web search engine using PostgreSQL for URL and document records and OpenSearch for the search index. Example URLs, IDs, worker states, and ranking weights are teaching choices. It is not a description of Google's private ranking system. Image/video search, ads, semantic retrieval, personal results, and large-scale spam defense require separate designs.</p>
+        <ul>
+          <li><a href="https://developers.google.com/search/docs/fundamentals/how-search-works" target="_blank" rel="noopener noreferrer">Google Search Central: crawl, index, serve</a></li>
+          <li><a href="https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap" target="_blank" rel="noopener noreferrer">Google Search Central: sitemaps</a></li>
+          <li><a href="https://www.rfc-editor.org/rfc/rfc9309" target="_blank" rel="noopener noreferrer">RFC 9309: robots exclusion</a></li>
+          <li><a href="https://developers.google.com/search/docs/crawling-indexing/robots-meta-tag" target="_blank" rel="noopener noreferrer">Google Search Central: noindex</a></li>
+          <li><a href="https://developers.google.com/search/docs/crawling-indexing/consolidate-duplicate-urls" target="_blank" rel="noopener noreferrer">Google Search Central: canonical URLs</a></li>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: safe URL fetching</a></li>
+          <li><a href="https://www.postgresql.org/docs/current/sql-select.html" target="_blank" rel="noopener noreferrer">PostgreSQL: SKIP LOCKED</a></li>
+          <li><a href="https://lucene.apache.org/core/10_3_2/core/org/apache/lucene/index/PostingsEnum.html" target="_blank" rel="noopener noreferrer">Lucene: postings</a></li>
+          <li><a href="https://lucene.apache.org/core/10_5_2/core/org/apache/lucene/search/similarities/BM25Similarity.html" target="_blank" rel="noopener noreferrer">Lucene: BM25</a></li>
+          <li><a href="https://docs.opensearch.org/latest/analyzers/supported-analyzers/standard/" target="_blank" rel="noopener noreferrer">OpenSearch: text analysis</a></li>
+          <li><a href="https://docs.opensearch.org/latest/query-dsl/full-text/multi-match/" target="_blank" rel="noopener noreferrer">OpenSearch: multi-match</a></li>
+          <li><a href="https://www.google.com/search/howsearchworks/how-search-works/ranking-results/" target="_blank" rel="noopener noreferrer">Google Search: ranking signals</a></li>
+          <li><a href="https://developers.google.com/search/docs/essentials/spam-policies" target="_blank" rel="noopener noreferrer">Google Search Central: spam examples</a></li>
+          <li><a href="https://docs.opensearch.org/latest/search-plugins/searching-data/highlight/" target="_blank" rel="noopener noreferrer">OpenSearch: highlighting</a></li>
+          <li><a href="https://docs.opensearch.org/latest/getting-started/intro/" target="_blank" rel="noopener noreferrer">OpenSearch: shards and replicas</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>
