@@ -13,6 +13,7 @@ Open `index.html` in a browser. The site uses plain HTML, CSS, and JavaScript; t
 - `guides/card-payments/index.html` and `guide.js` — card payment guide
 - `guides/website-load/index.html` and `guide.js` — website loading guide
 - `guides/chat-delivery/index.html`, `guide-data.js`, and `guide.js` — chat delivery guide
+- `guides/file-sharing/index.html`, `guide-data.js`, and `guide.js` — file upload and sharing guide
 - `favicon.svg` — shared icon
 
 The card guide uses a Stripe PaymentIntent with manual capture so authorization and capture can be inspected separately. Each guide includes a full system map, implementation notes, failure checks, and links to primary sources. The examples are teaching designs, not descriptions of any company's private implementation. Stripe recommends Checkout Sessions for most production checkouts.

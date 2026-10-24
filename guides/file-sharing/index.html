@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Build a file sharing system from a simple upload to private storage, scanning, share links, direct transfer, and large-file recovery.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <script src="guide-data.js" defer></script>
+  <script src="guide.js" defer></script>
+  <title>File upload to shareable link | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to file sharing flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 04 · FILES</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 04 / FILES</p>
+      <h1>How does a file upload become a shareable link?</h1>
+      <p>Maya uploads a 4 MiB PDF and sends a link to Leo. Build the first private upload, make it safe to share, then move the file bytes off the app server.</p>
+      <div class="intro-meta"><span>15 concrete steps</span><span>One file, two upload routes</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+    <section id="flow" class="flow" aria-label="Build the file sharing flow">
+      <div class="flow-top"><div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 15</span></div><div class="progress" aria-hidden="true"><span id="progress-fill"></span></div></div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="File sharing steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2><p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="File sharing system parts">
+            <div class="diagram-heading"><strong>PARTS ADDED SO FAR</strong><span>The active parts are highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="Capabilities added so far"></div>
+          </div>
+          <div class="handoff"><h3>At this moment</h3><dl>
+            <div><dt>From</dt><dd id="handoff-from"></dd></div><div><dt>To</dt><dd id="handoff-to"></dd></div>
+            <div><dt>Data</dt><dd id="handoff-message"></dd></div><div><dt>Result</dt><dd id="handoff-state"></dd></div>
+          </dl></div>
+          <div class="explanation"><div><h3>Why add this?</h3><p id="step-why"></p></div><div><h3>What would you build?</h3><p id="step-tech"></p></div></div>
+          <details class="inspect"><summary>Inspect this step</summary><div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://developer.mozilla.org/en-US/docs/Web/API/File_API" target="_blank" rel="noopener noreferrer"></a></div></details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next step →</button></div>
+        </article>
+      </div>
+    </section>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">The first route and the grown route</h2><p>Both routes use the same private file record, checking step, and share link.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / FIRST UPLOAD</span><p>Maya browser <b>→</b> app API receives bytes <b>→</b> private S3 staging <b>→</b> scan <b>→</b> published object + READY row</p><small>Simple to build. The app server carries every uploaded byte.</small></div>
+        <div><span>02 / DIRECT UPLOAD</span><p>Maya browser <b>→</b> app issues signed POST <b>→</b> S3 staging <b>→</b> version-pinned check + scan <b>→</b> same published object</p><small>The app authorizes and finalizes; S3 receives the bytes. A staging object is never the shared file.</small></div>
+        <div><span>03 / SHARED DOWNLOAD</span><p>Leo <b>→</b> app share-token check <b>→</b> app stream or short-lived signed GET <b>→</b> private S3 bytes</p><small>The share link is stable and revocable for new requests. A signed GET already issued lasts until its own expiry.</small></div>
+      </div>
+      <p class="trace"><strong>Trace this file:</strong> report.pdf, 4 MiB → file_id=f-41 → staging key=staging/u-41 → published key=files/f-41 → /s/&lt;random-token&gt; <span>IDs, paths, and endpoints are a teaching design. The bucket stays private.</span></p>
+    </section>
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">BUILD IT IN STAGES</p><h2 id="blueprint-title">Add a component when a failure demands it</h2><p>The public link only appears after the file is checked and published.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / WORKING</span><h3>App carries bytes</h3><p>Authenticate Maya, stream the upload through one app server into private S3, record a file row, check the content, then create a share token.</p></article>
+        <article><span>02 / LESS APP TRAFFIC</span><h3>Browser uploads to S3</h3><p>Give Maya a short-lived signed POST with one staging key and a size cap. Record the exact S3 version, check it, then copy it to a server-owned published key.</p></article>
+        <article><span>03 / LARGER FILES</span><h3>Parts and cleanup</h3><p>Use multipart upload when one request is impractical. Resume missing parts, complete once, abort abandoned uploads, and use multipart copy above S3's single-copy limit.</p></article>
+      </div>
+      <div class="state-model"><strong>The file and the link have separate states</strong>
+        <p><span>File</span> PENDING → STAGED → CHECKING → READY (or REJECTED).</p>
+        <p><span>Share link</span> ACTIVE → EXPIRED or REVOKED.</p>
+        <small>A successful S3 upload is not the same as a READY file. A READY file is not automatically shared.</small>
+      </div>
+      <details class="reference-detail"><summary>Exact records and API calls</summary><div class="reference-body">
+        <p><strong>files:</strong> id, owner_id, original_name, expected_size, staged_key, staged_version, final_key, status, created_at. A unique final key is generated by the server.</p>
+        <p><strong>shares:</strong> id, file_id, token_hash, expires_at, revoked_at. The raw random token is returned once in the link; the database stores its hash.</p>
+        <p><strong>First route:</strong> POST /files with file bytes → PENDING row → private staging object → checks → final object → READY.</p>
+        <p><strong>Direct route:</strong> POST /uploads with name, size, and base64 SHA-256 → upload_id + S3 POST fields. Browser POSTs the fields and file to S3; S3 returns x-amz-version-id. POST /uploads/{id}/complete with that version returns CHECKING. A worker checks that exact version, scans, copies, then marks READY.</p>
+        <p><strong>Sharing:</strong> POST /files/{id}/shares returns /s/{token}. GET /s/{token} checks the share and READY file on every new request, then streams bytes or redirects to a short-lived signed GET.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Why there are two storage keys</summary><div class="reference-body">
+        <p><strong>Staging key:</strong> a short-lived upload permission can be reused before it expires. In a versioned staging bucket, each accepted write gets an S3 version ID. The server scans and copies one specified version.</p>
+        <p><strong>Published key:</strong> only the app's server role can write here. It is unique to this file and is never handed to the browser for upload. The share link points to the file record, which points to this key.</p>
+        <p><strong>Order:</strong> copy the checked version first; mark the database row READY only after the copy succeeds. If the database update fails, clean up the unused published object later.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Failure drill</summary><div class="reference-body">
+        <p><strong>Browser stops mid-upload:</strong> file row stays PENDING or STAGED. The user can retry; a cleanup job removes stale rows and staging versions.</p>
+        <p><strong>S3 accepted bytes, browser missed the reply:</strong> reconcile using the upload session and exact version before starting another attempt. Never infer success from a progress bar.</p>
+        <p><strong>Scan fails:</strong> mark REJECTED, keep the share endpoint closed, and delete or quarantine according to policy.</p>
+        <p><strong>Copy succeeds, DB update fails:</strong> a published object exists without a READY row. Reconcile or delete it; do not issue a share link early.</p>
+        <p><strong>Share is revoked:</strong> new /s/{token} requests fail. A signed GET already handed out remains usable until it expires; use app streaming if every request needs an immediate policy check.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Security and browser details</summary><div class="reference-body">
+        <p><strong>Type:</strong> the filename and browser Content-Type are hints, not proof. Allow only needed types, inspect bytes, scan risky content, and keep untrusted uploads away from the site's own origin.</p>
+        <p><strong>Upload policy:</strong> sign an exact staging key, a content-length-range, and the checksum field. Keep the bucket private. S3 CORS must allow the app origin and POST, and expose x-amz-version-id for the direct route.</p>
+        <p><strong>Download:</strong> use Content-Disposition: attachment with a safe filename for this PDF flow. An anyone-with-link URL is a bearer secret; keep it out of logs and third-party page requests, and use a no-referrer policy on the share page.</p>
+        <p><strong>Limits:</strong> cap upload size and rate per account, limit share redemption rate, and set lifecycle cleanup for incomplete multipart uploads and old staging versions.</p>
+      </div></details>
+    </section>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>Object key</strong> The private storage name for bytes in S3; it is not the share URL.</p>
+        <p><strong>Signed POST</strong> A temporary S3 form policy for uploading to one allowed staging key.</p>
+        <p><strong>Version ID</strong> S3's identity for one write to a key in a versioned bucket.</p>
+        <p><strong>Checksum</strong> A value used to detect changed bytes during transfer. It does not declare content safe.</p>
+        <p><strong>Share token</strong> A random secret in the stable app link, checked against the share record.</p>
+        <p><strong>Signed GET</strong> A temporary storage URL created only after the app accepts a share request.</p>
+        <p><strong>Multipart upload</strong> S3's way to upload a large object as separately retriable parts.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is a teaching design for a 4 MiB PDF in a private, versioned S3 bucket with PostgreSQL metadata. The file IDs, API paths, state names, and share rules are chosen here; they do not describe a particular service's internals. The later multipart path is an alternative for larger files.</p>
+        <ul>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/API/File_API" target="_blank" rel="noopener noreferrer">MDN: browser File API</a></li>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: file upload validation</a></li>
+          <li><a href="https://www.w3.org/TR/capability-urls/" target="_blank" rel="noopener noreferrer">W3C: capability URLs and link secrecy</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/developerguide/sigv4-HTTPPOSTConstructPolicy.html" target="_blank" rel="noopener noreferrer">AWS: signed POST policy conditions</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/developerguide/RESTObjectPOST.html" target="_blank" rel="noopener noreferrer">AWS: POST Object checksum fields</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/cors.html" target="_blank" rel="noopener noreferrer">AWS: S3 browser CORS</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/AddingObjectstoVersioningEnabledBuckets.html" target="_blank" rel="noopener noreferrer">AWS: S3 version IDs</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html" target="_blank" rel="noopener noreferrer">AWS: HeadObject metadata</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/checking-object-integrity.html" target="_blank" rel="noopener noreferrer">AWS: object checksums</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html" target="_blank" rel="noopener noreferrer">AWS: copy a specified object version</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html" target="_blank" rel="noopener noreferrer">AWS: signed GET URLs and expiry</a></li>
+          <li><a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/mpuoverview.html" target="_blank" rel="noopener noreferrer">AWS: multipart upload</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Disposition" target="_blank" rel="noopener noreferrer">MDN: download Content-Disposition</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>
