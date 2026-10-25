@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Build a login system from a password check to an opaque cookie, shared sessions, expiry, device recognition, logout, recovery, and passkeys.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <link rel="stylesheet" href="guide.css">
+  <script src="guide-data.js" defer></script>
+  <script src="guide.js" defer></script>
+  <title>How login keeps you signed in | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to login flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 10 · LOGIN</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 10 / LOGIN</p>
+      <h1>How does login keep you signed in?</h1>
+      <p>Asha signs in to a notes app once, then opens another page without typing her password again. Build that first working route, watch it fail on a second server, and add shared sessions, expiry, device recognition, safe writes, recovery, and passkeys.</p>
+      <div class="intro-meta"><span>18 concrete steps</span><span>One account, one browser to start</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+    <section id="flow" class="flow" aria-label="Build the login flow">
+      <div class="flow-top"><div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 18</span></div><div class="progress" aria-hidden="true"><span id="progress-fill"></span></div></div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Login steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2><p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Login system parts added so far">
+            <div class="diagram-heading"><strong>PARTS IN THIS VERSION</strong><span>The active parts are highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="Capabilities added so far"></div>
+          </div>
+          <div class="handoff"><h3>At this moment</h3><dl>
+            <div><dt>From</dt><dd id="handoff-from"></dd></div><div><dt>To</dt><dd id="handoff-to"></dd></div>
+            <div><dt>Data</dt><dd id="handoff-message"></dd></div><div><dt>Result</dt><dd id="handoff-state"></dd></div>
+          </dl></div>
+          <div class="explanation"><div><h3>Why add this?</h3><p id="step-why"></p></div><div><h3>What would you build?</h3><p id="step-tech"></p></div></div>
+          <details class="inspect"><summary>Inspect this step</summary><div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer"></a></div></details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next step →</button></div>
+        </article>
+      </div>
+    </section>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">The cookie points to a revocable server record</h2><p>The password proves Asha once. The session identifies later requests. Each protected note still needs its own permission check.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / FIRST LOGIN</span><p>Asha <b>→</b> HTTPS login <b>→</b> Argon2id verify <b>→</b> server A memory S1 <b>→</b> cookie</p><small>Reloads work on A. A restart or server B cannot find S1.</small></div>
+        <div><span>02 / SHARED REQUEST PATH</span><p>Cookie S2 <b>→</b> server A or B <b>→</b> SHA-256(S2) <b>→</b> PostgreSQL session U1 <b>→</b> note permission</p><small>The server checks revocation and expiry on every protected request.</small></div>
+        <div><span>03 / LONGER AND SAFER</span><p>Idle/absolute expiry <b>·</b> opt-in R1 <b>→</b> rotate to R2 + new session <b>·</b> CSRF + safe rendering</p><small>A long device credential is separate from a short session. Both can be revoked.</small></div>
+        <div><span>04 / ACCOUNT CONTROL</span><p>Password reset <b>→</b> revoke old access <b>·</b> device list <b>→</b> revoke phone <b>·</b> passkey <b>→</b> new session</p><small>Redis can later cache reads, with PostgreSQL kept as the session authority.</small></div>
+      </div>
+      <p class="trace"><strong>Trace one request:</strong> POST /login → U1 verified → S2 cookie → GET /notes/42 → session U1 → note.owner_id=U1 <span>IDs, durations, endpoints, and notes-app policy are a teaching design. The memory and shared-store routes replay the same hypothetical login; they do not create two real sessions for Asha.</span></p>
+    </section>
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">BUILD IT IN STAGES</p><h2 id="blueprint-title">Each added part answers a visible failure</h2><p>The browser can carry the session secret, but the server must decide if it is still valid.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / WORKING</span><h3>Password and cookie</h3><p>Verify an Argon2id hash, issue a random session, read it on later requests, and revoke it on logout.</p></article>
+        <article><span>02 / MULTIPLE SERVERS</span><h3>Shared and bounded</h3><p>Move session rows to PostgreSQL, enforce deadlines, and add a separate opt-in credential for longer device recognition.</p></article>
+        <article><span>03 / ACCOUNT CONTROL</span><h3>Protect and recover</h3><p>Check each resource, block forged writes, reset safely, revoke devices, and accept a passkey proof when enrolled.</p></article>
+      </div>
+      <div class="state-model"><strong>Three credentials with different jobs</strong>
+        <p><span>Password</span> Human secret checked by Argon2id at login or password change; never used as a request cookie.</p>
+        <p><span>Session S2</span> Random short-term browser secret; hash and U1 mapping live on the server; expiry and logout end it.</p>
+        <p><span>Remember R1</span> Optional device secret with its own 30-day absolute limit; one use rotates it and creates a new session.</p>
+        <small>A passkey can replace the password proof at login. It still leads to a bounded session for later HTTP requests.</small>
+      </div>
+      <details class="reference-detail"><summary>Exact HTTP exchange for the first useful login</summary><div class="reference-body">
+        <p>The values S1 and S2 below stand for 32 random bytes encoded for a cookie. They are not literal production tokens. The first route stores S1 in server A memory. The grown route stores only SHA-256(S2) in PostgreSQL.</p>
+        <pre><code>POST /login HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+email=asha%40example.test&amp;password=...
+
+HTTP/1.1 303 See Other
+Location: /notes
+Cache-Control: no-store
+Set-Cookie: __Host-session=S2; Max-Age=28800; Path=/; Secure; HttpOnly; SameSite=Lax
+
+GET /notes/42 HTTP/1.1
+Cookie: __Host-session=S2</code></pre>
+        <p><strong>Browser:</strong> Stores and sends the cookie under its host, path, security, and age rules. <strong>Server:</strong> Hashes S2, loads an active session, gets U1, then checks note 42 belongs to U1. The password never appears in the later GET.</p>
+        <p>The <code>__Host-</code> prefix requires Secure, Path=/, and no Domain attribute in supporting browsers. HttpOnly is added to hide the cookie from page JavaScript. HTTPS is required for this route.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Exact session records and lookup</summary><div class="reference-body">
+        <p><strong>users:</strong> id=U1, normalized_email unique, password_hash (Argon2id encoded), email_verified_at, password_changed_at. Hash each human password with a unique salt through the library.</p>
+        <p><strong>sessions:</strong> token_hash primary key, user_id, device_id, created_at, last_seen_at, idle_expires_at, absolute_expires_at, revoked_at. Store the SHA-256 hash of a random 256-bit token; do not store the raw cookie. A unique user ID is internal data, not a client authorization claim.</p>
+        <pre><code>SELECT user_id, device_id
+FROM sessions
+WHERE token_hash = :sha256_cookie
+  AND revoked_at IS NULL
+  AND idle_expires_at &gt; now()
+  AND absolute_expires_at &gt; now();
+-- No row: unauthenticated. One row: check the requested object next.</code></pre>
+        <p>For the notes route, query <code>WHERE note_id = :note_id AND owner_id = :session_user_id</code>. The browser-supplied URL selects a note; only the session-derived U1 can grant ownership. Extend idle expiry from server time after valid activity, never past the absolute limit.</p>
+        <p><strong>Why two hashes differ:</strong> Argon2id slows guessing of a human password. SHA-256 is suitable here only because S2 is uniformly random and already has 256 bits of entropy.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Remember-device rotation and remote logout</summary><div class="reference-body">
+        <p><strong>remember_tokens:</strong> token_hash primary key, user_id, device_id, family_id, created_at, absolute_expires_at, consumed_at, revoked_at. R1 is a fresh random 256-bit token in a separate <code>__Host-remember</code> Secure, HttpOnly, SameSite=Lax cookie. Only its hash is stored.</p>
+        <pre><code>Set-Cookie: __Host-remember=R1; Max-Age=2592000; Path=/; Secure; HttpOnly; SameSite=Lax</code></pre>
+        <p><strong>Refresh:</strong> The browser makes one same-origin POST /session/refresh when S2 expires. The server validates Origin, atomically consumes live R1, creates S3 and R2, and sets both cookies. It does not move the device family's 30-day absolute deadline. Coordinate browser tabs so they do not race to consume R1.</p>
+        <pre><code>UPDATE remember_tokens
+SET consumed_at = now()
+WHERE token_hash = :sha256_r1
+  AND consumed_at IS NULL AND revoked_at IS NULL
+  AND absolute_expires_at &gt; now()
+RETURNING user_id, device_id, family_id, absolute_expires_at;
+-- Require one row; insert R2 and S3 in the same transaction.</code></pre>
+        <p><strong>Logout here:</strong> Revoke the current session and clear its cookie. <strong>Forget this device:</strong> Revoke its session and remember family, then clear both cookies. <strong>Log out everywhere:</strong> Revoke every active session and remember family for U1. Future requests fail; a request already in flight may finish.</p>
+        <p>Rotating tokens gives an old value no right to mint more sessions. A replay can be a theft signal, but concurrent legitimate refreshes need a deliberate policy before a whole family is revoked.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Which checks protect a write?</summary><div class="reference-body">
+        <p><strong>POST /notes/42/delete:</strong> Check HTTPS; load active S2; validate the exact expected Origin; require a session-bound CSRF token in the request; verify U1 owns note 42; then delete it. Keep GET read-only. The checks apply at the server, not just in the UI.</p>
+        <p><strong>CSRF:</strong> The browser automatically attaches cookies, so a valid S2 alone cannot show that Asha intended a cross-site request. SameSite=Lax helps but is not the only defense. The CSRF token is sent in a form field or custom header, not copied from the cookie or placed in a URL. Give each new session its own token. Login and remember-device refresh run before an active session token exists, so they use a separate same-origin policy.</p>
+        <p><strong>XSS:</strong> Treat a note title/body as data. Escape it in HTML or use textContent; sanitize rich HTML with a maintained library. An injected same-origin script can submit actions with S2 even when HttpOnly prevents reading S2.</p>
+        <p><strong>Sensitive changes:</strong> Require recent authentication before changing email, password, or passkey enrollment. Use the current server-side permission state near the write; a stale session cache should not grant a revoked privilege.</p>
+      </div></details>
+      <details class="reference-detail"><summary>How a password reset closes old access</summary><div class="reference-body">
+        <p>POST /password-reset-request always gives the same public answer. For U1, create a random P1, store SHA-256(P1) with a short expiry, and email a link to the verified address. Redact reset URLs from access logs and analytics.</p>
+        <p>When Asha submits a new password, use one PostgreSQL transaction to consume P1, replace U1's Argon2id hash, and revoke U1's active sessions and remember-token families. One returned row from this guarded update is the right to continue; zero means P1 was used, expired, or revoked.</p>
+        <pre><code>UPDATE password_resets
+SET used_at = now()
+WHERE token_hash = :sha256_p1
+  AND used_at IS NULL AND expires_at &gt; now()
+RETURNING user_id;
+-- In the same transaction: update password hash, revoke sessions
+-- and remember-token families for the returned user_id.</code></pre>
+        <p>Do not create a new logged-in session from P1. Asha signs in with the new password or an existing safe passkey after the reset.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Failure drills to run before launch</summary><div class="reference-body">
+        <p><strong>Unknown email versus wrong password:</strong> Show the same public error; issue no cookie; check throttling without revealing which account exists.</p>
+        <p><strong>Refresh and replica:</strong> Log in on server A, route the next request to B, restart A, and assert S2 still resolves from PostgreSQL. Delete the row and assert both servers deny it.</p>
+        <p><strong>Expiry:</strong> Move server time past idle and absolute deadlines separately. Assert the browser cookie alone never restores access. A remember device may create a new session only while its own token is live.</p>
+        <p><strong>Logout and stolen copy:</strong> Copy S2 in a test, log out, then send it again. Assert denial. Revoke a phone's remember family and assert it cannot mint a new session.</p>
+        <p><strong>Cross-site write:</strong> Send a POST with S2 but no valid Origin or CSRF token; assert note 42 survives. Try a valid S2 against Ben's note and assert denial.</p>
+        <p><strong>Reset token:</strong> Use P1 once, then replay it; assert the second use fails and old sessions/remember tokens remain revoked.</p>
+        <p><strong>Passkey:</strong> Replay a challenge or change the origin; assert verification fails and no session is issued.</p>
+        <p><strong>Cache:</strong> Revoke S2 in PostgreSQL and test cache invalidation. For a sensitive action, assert the authoritative row is checked even if Redis briefly has an old copy.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Why this guide uses server sessions</summary><div class="reference-body">
+        <p><strong>Opaque cookie:</strong> The browser carries only a random handle. PostgreSQL holds U1, expiry, device, and revocation. Logout can end a session immediately for future authoritative reads.</p>
+        <p><strong>Signed JWT in a cookie:</strong> A server can verify a signed claim without a session lookup, but a long-lived token remains usable until expiry unless the system adds a denylist, short lifespan with refresh, or another revocation mechanism. JWT does not remove CSRF or XSS concerns when it is carried by a cookie.</p>
+        <p><strong>Sign in with another provider:</strong> OpenID Connect adds a separate identity-provider proof and callback checks. After verifying the provider response, this notes app can still issue its own S2 and use the same request/session/authorization path. That provider flow is a separate guide-sized branch.</p>
+      </div></details>
+    </section>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>Authentication</strong> Proving who is signing in.</p>
+        <p><strong>Authorization</strong> Checking whether that user may access one resource or action.</p>
+        <p><strong>Session ID</strong> A random browser-held handle for a server-side login record.</p>
+        <p><strong>Bearer secret</strong> A value that grants access to whoever presents it while valid.</p>
+        <p><strong>Idle timeout</strong> Ends a session after no activity for a chosen period.</p>
+        <p><strong>Absolute timeout</strong> Ends a session at a fixed limit even if it stays active.</p>
+        <p><strong>CSRF</strong> A forged browser request that uses an automatically attached credential.</p>
+        <p><strong>XSS</strong> Untrusted page content running as script in the site's origin.</p>
+        <p><strong>Passkey</strong> A WebAuthn credential that signs a fresh challenge with a private key kept by an authenticator.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is a teaching design for one first-party notes website on one HTTPS host. The IDs, policies, cookie ages, schema, and refresh path are examples, not a claim about a particular site's login system. Mobile apps, cross-domain single sign-on, enterprise identity, and regulated accounts need their own choices.</p>
+        <ul>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: password hashing</a></li>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: authentication and throttling</a></li>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: per-request authorization</a></li>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: sessions and expiry</a></li>
+          <li><a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie" target="_blank" rel="noopener noreferrer">MDN: cookie attributes and __Host- prefix</a></li>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: CSRF prevention</a></li>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: XSS prevention</a></li>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">OWASP: password reset</a></li>
+          <li><a href="https://www.w3.org/TR/webauthn-3/" target="_blank" rel="noopener noreferrer">W3C: WebAuthn passkeys</a></li>
+          <li><a href="https://redis.io/docs/latest/commands/expire/" target="_blank" rel="noopener noreferrer">Redis: cache expiry</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>
