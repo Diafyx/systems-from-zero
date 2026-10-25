@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Build a reserved-seat ticket system from one seat map to atomic holds, card capture, ticket issue, gate scans, and rush traffic.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <link rel="stylesheet" href="guide.css">
+  <script src="guide-data.js" defer></script>
+  <script src="guide.js" defer></script>
+  <title>How a ticketing site prevents double booking | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to booking flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 08 · TICKETS</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 08 / TICKETS</p>
+      <h1>How does a ticketing site prevent double booking?</h1>
+      <p>Nina and Leo both want seat A-12 for event E7. Start with a seat map that works for one buyer. Watch it fail when they click together, then add the exact claim, payment, ticket, and gate steps that make the sale safe.</p>
+      <div class="intro-meta"><span>17 concrete steps</span><span>One seat, two buyers</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+    <section id="flow" class="flow" aria-label="Build the ticket booking flow">
+      <div class="flow-top"><div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 17</span></div><div class="progress" aria-hidden="true"><span id="progress-fill"></span></div></div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Ticket booking steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2><p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Ticket system parts added so far">
+            <div class="diagram-heading"><strong>PARTS IN THIS VERSION</strong><span>The active parts are highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="Capabilities added so far"></div>
+          </div>
+          <div class="handoff"><h3>At this moment</h3><dl>
+            <div><dt>From</dt><dd id="handoff-from"></dd></div><div><dt>To</dt><dd id="handoff-to"></dd></div>
+            <div><dt>Data</dt><dd id="handoff-message"></dd></div><div><dt>Result</dt><dd id="handoff-state"></dd></div>
+          </dl></div>
+          <div class="explanation"><div><h3>Why add this?</h3><p id="step-why"></p></div><div><h3>What would you build?</h3><p id="step-tech"></p></div></div>
+          <details class="inspect"><summary>Inspect this step</summary><div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://www.postgresql.org/docs/current/transaction-iso.html" target="_blank" rel="noopener noreferrer"></a></div></details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next step →</button></div>
+        </article>
+      </div>
+    </section>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">One seat row joins four separate paths</h2><p>The map helps people choose. The database claim decides who may pay. Payment, ticket issue, and entry each have their own state.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / FIRST VERSION</span><p>Buyer <b>→</b> seat map <b>→</b> read AVAILABLE <b>→</b> insert booking</p><small>Fine for one buyer. Two workers can both read AVAILABLE and both confirm.</small></div>
+        <div><span>02 / OWNERSHIP</span><p>Nina + Leo <b>→</b> Booking API <b>→</b> PostgreSQL guarded UPDATE <b>→</b> one HELD seat</p><small>The winner gets H1 with a server deadline. The loser gets zero rows.</small></div>
+        <div><span>03 / PAYMENT AND TICKET</span><p>H1 <b>→</b> Stripe authorize <b>→</b> FINALIZING <b>→</b> Stripe capture <b>→</b> SOLD + outbox <b>→</b> T1</p><small>FINALIZING keeps the seat blocked while the external capture result is uncertain.</small></div>
+        <div><span>04 / ENTRY AND RUSH</span><p>QR token <b>→</b> online gate check <b>→</b> VALID to USED <b>·</b> Waiting Room <b>→</b> controlled sale traffic</p><small>A copied QR loses the second race. Rush controls protect the app, not seat ownership.</small></div>
+      </div>
+      <p class="trace"><strong>Trace this seat:</strong> E7/A-12 → H1 → O1 → Stripe P1 → SOLD → ticket T1 → USED <span>IDs, prices, state names, and endpoints are a teaching design. The first and safe versions replay one hypothetical sale; they are not two real bookings or charges.</span></p>
+    </section>
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">BUILD IT IN STAGES</p><h2 id="blueprint-title">Each part closes a specific gap</h2><p>Keep the ownership decision in one database row as more services join.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / FIRST SALE</span><h3>Map and booking</h3><p>Show seats and record one booking. Two buyers reveal the read-then-insert race.</p></article>
+        <article><span>02 / SAFE CHECKOUT</span><h3>Claim, hold, pay</h3><p>Use a guarded seat update, an expiry, a retry-safe order, manual card capture, and FINALIZING while payment is uncertain.</p></article>
+        <article><span>03 / LIVE EVENT</span><h3>Ticket, gate, rush</h3><p>Issue from an outbox, scan one-use tokens online, reconcile crashes, and meter peak traffic.</p></article>
+      </div>
+      <div class="state-model"><strong>Three state machines for A-12</strong>
+        <p><span>Seat</span> AVAILABLE → HELD(H1) → FINALIZING(O1) → SOLD(O1). An expired HELD can return to AVAILABLE or be claimed by H2.</p>
+        <p><span>Payment</span> requires_payment_method → requires_action if needed → requires_capture → succeeded; failure or cancellation takes another branch.</p>
+        <p><span>Ticket</span> absent → VALID(T1) → USED. Refund or cancellation can move VALID to REVOKED under an explicit policy.</p>
+        <small>Payment status and seat status are distinct. A successful capture is followed by a recoverable SOLD commit; it is never assumed to be atomic with Stripe.</small>
+      </div>
+      <details class="reference-detail"><summary>Exact records and request contracts</summary><div class="reference-body">
+        <p><strong>event_seats:</strong> event_id + seat_id primary key, state, hold_id, hold_expires_at, order_id, price_cents. One row exists before sale. Only server-side code changes its state.</p>
+        <p><strong>orders:</strong> id, checkout_key unique, buyer_id, event_id, seat_id, accepted_amount_cents=5000, state, payment_intent_id, capture_operation_key. Bind one checkout key to immutable buyer, seat, amount, and hold details.</p>
+        <p><strong>tickets:</strong> id, order_id unique, event_id, seat_id, token_hash unique, status, issued_at, checked_in_at. Keep a unique active ticket per event seat. A token is a random bearer secret, not the visible seat label.</p>
+        <p><strong>outbox:</strong> event_id unique, type, order_id, created_at, sent_at. The worker may see an event twice and must return the existing ticket for O1.</p>
+        <p><strong>Requests:</strong> GET /events/E7/seats is a snapshot. POST /holds claims a seat and returns H1 + deadline or unavailable. POST /checkouts with C1 and H1 returns O1. GET /orders/O1 reports the durable result. POST /gate/check-ins sends token + E7 and returns admitted or rejected.</p>
+      </div></details>
+      <details class="reference-detail"><summary>The exact race and the winning seat claim</summary><div class="reference-body">
+        <p><strong>Broken timeline:</strong> Nina reads AVAILABLE → Leo reads AVAILABLE → Nina inserts B1 → Leo inserts B2. A read followed by a separate insert is not an exclusive claim.</p>
+        <p>For an existing seat row, run one PostgreSQL UPDATE. Use a server-generated, unguessable H1. One returned row means the caller owns the hold. Zero means unavailable. A second concurrent UPDATE waits and rechecks the row after the first commits.</p>
+        <pre><code>UPDATE event_seats
+SET state = 'HELD',
+    hold_id = :hold_id,
+    hold_expires_at = clock_timestamp() + interval '5 minutes',
+    order_id = NULL
+WHERE event_id = :event_id AND seat_id = :seat_id
+  AND (state = 'AVAILABLE'
+       OR (state = 'HELD' AND hold_expires_at &lt; clock_timestamp()))
+RETURNING hold_id, hold_expires_at;</code></pre>
+        <p>Do not make a separate availability SELECT the acceptance condition. A cached map and a late expiry sweeper cannot decide the winner.</p>
+      </div></details>
+      <details class="reference-detail"><summary>How checkout crosses the payment boundary</summary><div class="reference-body">
+        <p><strong>Authorize:</strong> Create Stripe P1 for 5000 USD cents with manual capture and a stable create idempotency key. Complete card authentication as needed. Continue only when P1 is <code>requires_capture</code>.</p>
+        <p><strong>Freeze:</strong> Before capture, change HELD H1 to FINALIZING O1 with a guarded UPDATE requiring the same hold ID and a live server deadline. Commit this transaction before calling Stripe; do not hold a database lock during a network call. If no row returns, cancel P1 while uncaptured. FINALIZING is never reclaimed by the hold expiry path.</p>
+        <pre><code>UPDATE event_seats
+SET state = 'FINALIZING', order_id = :order_id
+WHERE event_id = :event_id AND seat_id = :seat_id
+  AND state = 'HELD' AND hold_id = :hold_id
+  AND hold_expires_at &gt; clock_timestamp()
+RETURNING seat_id;</code></pre>
+        <p><strong>Capture:</strong> Call Stripe capture on P1 with a stable key for O1. If the reply is lost, retrieve P1 and resolve its actual state. Keep the seat FINALIZING while unknown. The site's hold deadline and Stripe's authorization expiry are different clocks.</p>
+        <p><strong>Commit:</strong> On confirmed <code>succeeded</code>, commit SOLD(O1), PAID(O1), and TicketRequested(O1) in one local transaction. If that commit fails, retry it after reconciliation; do not free the seat. If P1 is confirmed canceled or failed, release FINALIZING only with a guarded update matching O1; keep a record of the failed attempt.</p>
+      </div></details>
+      <details class="reference-detail"><summary>How the gate prevents ticket reuse</summary><div class="reference-body">
+        <p>The QR carries a random token. The online gate API hashes it, matches the event, and performs this update. One returned row means admit. Zero means unknown, revoked, wrong event, or already used; show the precise reason to authorized staff without leaking it to the public scanner response.</p>
+        <pre><code>UPDATE tickets
+SET status = 'USED', checked_in_at = clock_timestamp()
+WHERE token_hash = :token_hash
+  AND event_id = :event_id
+  AND status = 'VALID'
+RETURNING ticket_id, seat_id, checked_in_at;</code></pre>
+        <p>Two online gates racing on T1 cannot both update VALID. Offline scanning requires a separate policy for conflicting scans and is outside this route.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Failure drills to run before a sale</summary><div class="reference-body">
+        <p><strong>Two buyers:</strong> Force concurrent claims for A-12; assert exactly one H1 and one loser. Repeat with one expired HELD row and ensure an old hold cannot finalize.</p>
+        <p><strong>Checkout retry:</strong> Send C1 twice, including after a lost HTTP response. Assert one O1 and one P1. Reuse C1 with a different seat or amount and assert rejection.</p>
+        <p><strong>Authentication delay:</strong> Let H1 expire before P1 reaches <code>requires_capture</code>. Assert no capture and no ticket; cancel the uncaptured intent.</p>
+        <p><strong>Capture reply lost:</strong> Simulate a timeout after Stripe succeeds. Keep FINALIZING, retrieve P1, commit SOLD once, and issue T1 once.</p>
+        <p><strong>Worker duplicate:</strong> Send TicketRequested(O1) twice. Assert one ticket and one active token. Fail email and ensure account retrieval still works.</p>
+        <p><strong>Gate race:</strong> Scan copies of T1 simultaneously at two gates. Assert one admission and one rejection. Revoke T1 and assert later scans fail.</p>
+        <p><strong>Group hold:</strong> Request A-13 and an already held A-14. Assert the transaction leaves neither newly held for that order.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Operational limits and decisions</summary><div class="reference-body">
+        <p><strong>Reserved seats:</strong> This guide uses one row per numbered seat. General admission needs an atomic remaining-capacity counter and its own allocation rules.</p>
+        <p><strong>Refund and resale:</strong> Refunding a captured payment does not automatically make a sold seat available. Before entry, revoke the old ticket, record the refund, and apply an explicit resale policy before reopening the seat. A USED ticket needs a separate post-entry refund policy and must never be resold as an unused seat.</p>
+        <p><strong>Waiting Room:</strong> It controls how many buyers reach the app during a spike. It does not guarantee a seat, and a cached map may lag. The guarded PostgreSQL update remains the ownership rule.</p>
+        <p><strong>Watch:</strong> claim latency, zero-row claims, hold expiry rate, FINALIZING age, Stripe status mismatches, outbox age, ticket issue retries, and duplicate gate scans. Alert on stuck states before doors open.</p>
+      </div></details>
+    </section>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>Atomic claim</strong> One database operation chooses a winner.</p>
+        <p><strong>Hold</strong> A temporary seat claim with a server deadline.</p>
+        <p><strong>Authorization</strong> Card funds reserved for later capture.</p>
+        <p><strong>Capture</strong> Taking the authorized payment.</p>
+        <p><strong>Idempotency key</strong> A stable ID that makes a retry mean the same operation.</p>
+        <p><strong>Outbox</strong> A database record of work to send after a commit.</p>
+        <p><strong>Reconciliation</strong> Comparing external and local records to finish uncertain work.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is an example architecture, not a description of a ticket vendor's private system. The SQL and state transitions are a teaching design for numbered seats, online gates, PostgreSQL, and eligible card payments. Check provider behavior and policy before production use.</p>
+        <ul>
+          <li><a href="../card-payments/">Guide 01: how the card payment works</a></li>
+          <li><a href="https://www.postgresql.org/docs/current/transaction-iso.html" target="_blank" rel="noopener noreferrer">PostgreSQL: concurrent updates</a></li>
+          <li><a href="https://www.postgresql.org/docs/current/sql-update.html" target="_blank" rel="noopener noreferrer">PostgreSQL: UPDATE and RETURNING</a></li>
+          <li><a href="https://www.postgresql.org/docs/current/ddl-constraints.html" target="_blank" rel="noopener noreferrer">PostgreSQL: constraints</a></li>
+          <li><a href="https://docs.stripe.com/payments/place-a-hold-on-a-payment-method" target="_blank" rel="noopener noreferrer">Stripe: authorize and capture separately</a></li>
+          <li><a href="https://docs.stripe.com/api/payment_intents/capture" target="_blank" rel="noopener noreferrer">Stripe: capture a PaymentIntent</a></li>
+          <li><a href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener noreferrer">Stripe: idempotent API calls</a></li>
+          <li><a href="https://docs.stripe.com/webhooks" target="_blank" rel="noopener noreferrer">Stripe: webhook delivery</a></li>
+          <li><a href="https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html" target="_blank" rel="noopener noreferrer">AWS: transactional outbox</a></li>
+          <li><a href="https://developers.cloudflare.com/waiting-room/about/" target="_blank" rel="noopener noreferrer">Cloudflare: Waiting Room</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>
