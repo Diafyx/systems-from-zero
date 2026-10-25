@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Follow one online shoe order from checkout to stock reservation, card authorization, warehouse picking, shipping label, carrier handoff, tracking, and delivery.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <link rel="stylesheet" href="guide.css">
+  <script src="guide-data.js" defer></script>
+  <script src="guide.js" defer></script>
+  <title>How an online order reaches your door | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to order flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 07 · ORDERS</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 07 / ORDERS</p>
+      <h1>How does an online order reach your door?</h1>
+      <p>Asha orders one pair of size 9 running shoes for $88. Build a small store that delivers by hand, then replay the same purchase with safe checkout, warehouse work, a carrier, and tracking.</p>
+      <div class="intro-meta"><span>18 concrete steps</span><span>One order, two fulfillment routes</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+    <section id="flow" class="flow" aria-label="Build the order delivery flow">
+      <div class="flow-top"><div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 18</span></div><div class="progress" aria-hidden="true"><span id="progress-fill"></span></div></div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Order delivery steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2><p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Order system parts added so far">
+            <div class="diagram-heading"><strong>PARTS IN THIS VERSION</strong><span>The active parts are highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="Capabilities added so far"></div>
+          </div>
+          <div class="handoff"><h3>At this moment</h3><dl>
+            <div><dt>From</dt><dd id="handoff-from"></dd></div><div><dt>To</dt><dd id="handoff-to"></dd></div>
+            <div><dt>Data</dt><dd id="handoff-message"></dd></div><div><dt>Result</dt><dd id="handoff-state"></dd></div>
+          </dl></div>
+          <div class="explanation"><div><h3>Why add this?</h3><p id="step-why"></p></div><div><h3>What would you build?</h3><p id="step-tech"></p></div></div>
+          <details class="inspect"><summary>Inspect this step</summary><div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://shopify.dev/docs/apps/build/orders-fulfillment/order-management-apps" target="_blank" rel="noopener noreferrer"></a></div></details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next step →</button></div>
+        </article>
+      </div>
+    </section>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">Money, stock, and parcel move on different paths</h2><p>They meet at the order record. Each path has its own status and evidence.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / FIRST STORE</span><p>Asha <b>→</b> store app + Stripe charge <b>→</b> staff pick and pack <b>→</b> local driver <b>→</b> manual delivery report</p><small>Works for a few orders. Physical stock and delivery updates rely on people.</small></div>
+        <div><span>02 / SAFE CHECKOUT</span><p>Checkout key <b>→</b> PostgreSQL order + stock hold <b>→</b> Stripe authorization <b>→</b> PLACED order + outbox <b>→</b> SQS</p><small>One stock hold and one payment attempt belong to one order. Authorization is not capture.</small></div>
+        <div><span>03 / WAREHOUSE</span><p>SQS worker <b>→</b> W1 pick task <b>→</b> barcode scan <b>→</b> packed box <b>→</b> Shippo label <b>→</b> Stripe capture</p><small>A label and tracking number can exist while the box is still at W1.</small></div>
+        <div><span>04 / DELIVERY</span><p>W1 dock handoff <b>→</b> UPS scans <b>→</b> last-mile driver <b>→</b> Shippo tracking update <b>→</b> Asha's order timeline</p><small>Carrier milestones are scan reports. A disputed or returned parcel gets a separate case.</small></div>
+      </div>
+      <p class="trace"><strong>Trace this pair:</strong> RUN-BLU-09 → order o-41 → W1 stock hold → pick p-41 → shipment s-41 + tracking number → carrier DELIVERED event <span>IDs, prices, state names, and endpoints are a teaching design. The first and upgraded routes replay the same hypothetical purchase; they are not two real charges.</span></p>
+    </section>
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">BUILD IT IN STAGES</p><h2 id="blueprint-title">The next part solves a specific failure</h2><p>Do not make Asha wait for a parcel to travel before the site confirms her order.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / WORKING</span><h3>One room, one driver</h3><p>Charge at checkout, save an order, have staff pack it, and record delivery by hand. Missing stock and manual updates are visible weaknesses.</p></article>
+        <article><span>02 / SAFE AND REPEATABLE</span><h3>Reserve, authorize, fulfill</h3><p>Give checkout one retry key, reserve stock atomically, authorize the card, and send a durable warehouse task from the order transaction.</p></article>
+        <article><span>03 / MANY PARCELS</span><h3>Scan, label, track</h3><p>Scan the picked SKU, buy a carrier label, capture before handoff, record actual carrier scans, and reconcile failed or delayed updates.</p></article>
+      </div>
+      <div class="state-model"><strong>Four clocks for one order</strong>
+        <p><span>Order</span> PENDING_PAYMENT → PLACED → HANDED_OFF → DELIVERED (or EXCEPTION).</p>
+        <p><span>Payment</span> requires_capture → succeeded, or canceled before capture.</p>
+        <p><span>Stock at W1</span> on_hand 3, reserved 0 → 3,1 → 2,0 after handoff.</p>
+        <p><span>Parcel</span> PICKING → PACKED → LABEL_CREATED → HANDED_OFF → IN_TRANSIT → DELIVERED.</p>
+        <small>A PLACED order is not paid in the manual-capture route. A label is not carrier possession. A delivered scan can still be disputed.</small>
+      </div>
+      <details class="reference-detail"><summary>Exact records and API calls</summary><div class="reference-body">
+        <p><strong>orders:</strong> id, checkout_key (unique), customer_id, sku, quantity, amount_cents=8800, address_snapshot, warehouse_id, order_state, payment_state, payment_intent_id. The accepted amount and address are snapshots; later catalog edits do not rewrite this order.</p>
+        <p><strong>stock:</strong> warehouse_id + sku primary key, on_hand, reserved. <strong>reservations:</strong> order_id (unique), warehouse_id, sku, quantity, expires_at, state. HELD is temporary; COMMITTED lasts through fulfillment; RELEASED or CONSUMED closes the claim.</p>
+        <p><strong>fulfillments:</strong> task_id, order_id (unique for this one-parcel order), warehouse_id, bin, picked_sku, picked_at, packed_at. <strong>shipments:</strong> shipment_id, order_id, Shippo transaction ID, carrier, tracking_number, state, handoff_at.</p>
+        <p><strong>events:</strong> outbox(event_id, order_id, type, sent_at) and tracking_events(shipment_id, provider_event_key, carrier_status, carrier_event_at, received_at). Deduplicate callbacks and keep original carrier times.</p>
+        <p><strong>Checkout:</strong> POST /checkouts with checkout_key=c-41 → o-41. Stripe create/confirm PaymentIntent for 8800 USD cents with manual capture and a stable idempotency key. The app treats requires_capture as AUTHORIZED.</p>
+        <p><strong>Shipping:</strong> after pick and pack, POST /shipments to Shippo with sender, recipient, and parcel measurements; choose a UPS rate; POST /transactions with that rate to buy the label. Store transaction ID only when its status is SUCCESS, plus the tracking number. Capture the linked PaymentIntent before dock release. Shippo track_updated calls the app with later carrier status.</p>
+      </div></details>
+      <details class="reference-detail"><summary>The stock transaction that stops two buyers taking one pair</summary><div class="reference-body">
+        <p>For an existing W1 stock row, run this UPDATE inside a PostgreSQL transaction. If it returns one row, insert reservation(o-41,W1,RUN-BLU-09,1) and commit. If it returns no row, roll back and report out of stock.</p>
+        <pre><code>UPDATE stock
+SET reserved = reserved + 1
+WHERE warehouse_id = 'W1'
+  AND sku = 'RUN-BLU-09'
+  AND on_hand - reserved &gt;= 1
+RETURNING on_hand, reserved;</code></pre>
+        <p><strong>Cancel before handoff:</strong> mark the reservation RELEASED and decrement reserved once. <strong>Handoff:</strong> mark it CONSUMED and decrement both on_hand and reserved once. Guard each transition by its prior state so retries do not move stock twice.</p>
+      </div></details>
+      <details class="reference-detail"><summary>What happens if a response goes missing</summary><div class="reference-body">
+        <p><strong>Checkout response lost:</strong> Asha retries c-41. The store returns o-41; it does not create a second order.</p>
+        <p><strong>Stripe reply lost:</strong> Read pi-41 and its status before another request. Reuse the same Stripe idempotency key for the same operation and parameters.</p>
+        <p><strong>Authorization succeeded, order commit failed:</strong> Reconcile o-41 and pi-41. If its stock hold is still valid, retry the guarded PLACED transaction; otherwise cancel the uncaptured PaymentIntent and release any remaining hold.</p>
+        <p><strong>Order commits but SQS send fails:</strong> The outbox row remains unsent. The relay retries; the worker uses o-41 to avoid a second pick task.</p>
+        <p><strong>Label reply lost:</strong> Reconcile the Shippo transaction or search by stored attempt details before buying another label. A second purchase can cost money and create another tracking number.</p>
+        <p><strong>Capture fails:</strong> Keep the box at W1. Do not hand it to UPS; resolve payment or cancel. An expired authorization cannot simply be captured later.</p>
+        <p><strong>Tracking callback missing:</strong> Poll the carrier/Shippo tracking record and compare event history. Do not move the order backward because an older event arrived late.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Where the physical handoffs happen</summary><div class="reference-body">
+        <p><strong>Reserved:</strong> A database claim on a pair. The pair may still be on the shelf.</p>
+        <p><strong>Picked:</strong> Staff found and scanned a matching physical pair. It can still be damaged or packed incorrectly.</p>
+        <p><strong>Label created:</strong> Shippo purchased postage and returned a tracking number. UPS may not yet have the box.</p>
+        <p><strong>Handed off:</strong> W1 gave the parcel to a UPS pickup driver and recorded dock evidence. The first carrier scan may arrive after this.</p>
+        <p><strong>Delivered:</strong> The carrier reported the delivery milestone. Keep support and proof-of-delivery paths for disputes.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Card, address, and webhook boundaries</summary><div class="reference-body">
+        <p><strong>Card details:</strong> Use Stripe's Payment Element or equivalent client-side collection. The store app holds the PaymentIntent ID and status, not Asha's raw card number. Keep Stripe secret keys on the server; do not log the client secret.</p>
+        <p><strong>Address:</strong> Store it with restricted access for fulfillment and support. The SQS event contains o-41 and W1, not Asha's full address; the authorized warehouse worker looks up only the fields it needs.</p>
+        <p><strong>Tracking callback:</strong> Configure one of Shippo's webhook protection methods, such as HMAC where enabled. Verify the sender and match the tracking number to a shipment before accepting any status. Keep the original payload for investigation.</p>
+      </div></details>
+      <details class="reference-detail"><summary>What to measure and reconcile</summary><div class="reference-body">
+        <p><strong>Checkout:</strong> duplicate-key returns, failed stock holds, authorizations stuck near expiry, payment failures, and PENDING_PAYMENT age.</p>
+        <p><strong>Warehouse:</strong> outbox age, SQS retry count, pick exceptions, wrong-SKU scans, packed-but-uncaptured orders, and labels without handoff.</p>
+        <p><strong>Carrier:</strong> handoffs without first scans, delivery estimate changes, exceptions, callbacks delayed past a threshold, and DELIVERED disputes.</p>
+        <p><strong>Daily reconciliation:</strong> compare order state with reservation, Stripe PaymentIntent, fulfillment task, label transaction, and carrier history. Put mismatches into a human review queue with exact IDs.</p>
+      </div></details>
+    </section>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>SKU</strong> The store's exact product variant, including size and color.</p>
+        <p><strong>Reservation</strong> A temporary claim that reduces sellable stock without removing the item from the building.</p>
+        <p><strong>Authorization</strong> A card hold that may later be captured or canceled; it has a time limit.</p>
+        <p><strong>Capture</strong> The payment step that takes funds after authorization.</p>
+        <p><strong>WMS</strong> Warehouse management software that tracks bins, picks, and packing work.</p>
+        <p><strong>Outbox</strong> An event row committed with the order, then sent to a queue by a relay.</p>
+        <p><strong>Shipping label</strong> Carrier routing and tracking information attached to a parcel, created before pickup.</p>
+        <p><strong>Tracking event</strong> A carrier-reported milestone with its own event time.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is a teaching design for one domestic shoe order, one parcel, a card payment, and a store-owned warehouse. Stripe, Shippo, UPS, PostgreSQL, and SQS are concrete examples. The IDs, order states, shipping policy, and stock schema are chosen here; they do not describe any retailer's private system. Tax calculation, fraud review, split shipments, international customs, and warehouse purchasing need their own flows. The card-payment guide explains bank authorization and capture in more depth.</p>
+        <ul>
+          <li><a href="../card-payments/">Guide 01: how the card payment works</a></li>
+          <li><a href="https://shopify.dev/docs/apps/build/orders-fulfillment/order-management-apps" target="_blank" rel="noopener noreferrer">Shopify: fulfillment order lifecycle</a></li>
+          <li><a href="https://www.postgresql.org/docs/current/sql-update.html" target="_blank" rel="noopener noreferrer">PostgreSQL: conditional UPDATE</a></li>
+          <li><a href="https://docs.stripe.com/api/payment_intents" target="_blank" rel="noopener noreferrer">Stripe: PaymentIntent lifecycle</a></li>
+          <li><a href="https://docs.stripe.com/payments/finalize-payments-on-the-server" target="_blank" rel="noopener noreferrer">Stripe: client-side card collection</a></li>
+          <li><a href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener noreferrer">Stripe: idempotent API calls</a></li>
+          <li><a href="https://docs.stripe.com/api/payment_intents/capture" target="_blank" rel="noopener noreferrer">Stripe: capture an authorization</a></li>
+          <li><a href="https://docs.stripe.com/api/refunds" target="_blank" rel="noopener noreferrer">Stripe: refunds</a></li>
+          <li><a href="https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html" target="_blank" rel="noopener noreferrer">AWS: transactional outbox</a></li>
+          <li><a href="https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/standard-queues.html" target="_blank" rel="noopener noreferrer">AWS: SQS duplicate delivery</a></li>
+          <li><a href="https://support.gs1.org/support/solutions/articles/43000734095-how-do-gs1-gtins-and-barcodes-work-" target="_blank" rel="noopener noreferrer">GS1: barcodes and product IDs</a></li>
+          <li><a href="https://docs.goshippo.com/shippoapi/public-api/transactions/createtransaction" target="_blank" rel="noopener noreferrer">Shippo: buy a shipping label</a></li>
+          <li><a href="https://docs.goshippo.com/tracking/webhooks" target="_blank" rel="noopener noreferrer">Shippo: tracking events</a></li>
+          <li><a href="https://docs.goshippo.com/tracking/webhook-security" target="_blank" rel="noopener noreferrer">Shippo: webhook security options</a></li>
+          <li><a href="https://www.ups.com/us/en/support/tracking-support/where-is-my-package/understanding-tracking-status" target="_blank" rel="noopener noreferrer">UPS: tracking status meanings</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>
