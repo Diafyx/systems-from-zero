@@ -1,0 +1,10 @@
+.reference-body pre {
+  margin:10px 0 14px;
+  padding:14px 16px;
+  overflow-x:auto;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:#fff;
+  color:var(--ink);
+  font:12px/1.55 Consolas,"Courier New",monospace;
+}

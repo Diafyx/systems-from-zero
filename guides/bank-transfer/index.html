@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8f9f6">
+  <meta name="description" content="Build a bank transfer from a same-bank ledger entry to a U.S. ACH credit through FedACH, interbank settlement, recipient posting, returns, and reconciliation.">
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../shared.css">
+  <link rel="stylesheet" href="guide.css">
+  <script src="guide-data.js" defer></script>
+  <script src="guide.js" defer></script>
+  <title>How a bank transfer moves money | Systems from Zero</title>
+</head>
+<body>
+  <a class="skip-link" href="#flow">Skip to transfer flow</a>
+  <header class="topbar wrap">
+    <a class="brand" href="../../">SYSTEMS<span>/</span>ZERO</a>
+    <span class="header-label">GUIDE 09 · BANK TRANSFERS</span>
+    <a class="back-link" href="../../">All guides</a>
+  </header>
+  <main class="wrap">
+    <div class="intro">
+      <p class="eyebrow">GUIDE 09 / BANK TRANSFERS</p>
+      <h1>How does a bank transfer move money?</h1>
+      <p>Maya sends $120 to Alex. Start when both accounts are at Bank A. Then move Alex to Bank B and follow the same payment through a U.S. ACH credit: customer ledgers, a FedACH file, settlement between banks, the recipient credit, and a possible return.</p>
+      <div class="intro-meta"><span>18 concrete steps</span><span>One transfer, two routes</span><a href="#system-map">See the whole system ↓</a></div>
+    </div>
+    <noscript><p class="no-script">Turn on JavaScript to use the step by step flow. The full system view and reference below are still available.</p></noscript>
+    <section id="flow" class="flow" aria-label="Build the bank transfer flow">
+      <div class="flow-top"><div><span class="section-label">BUILD THE FLOW</span><span id="step-number" class="step-number">STEP 01 OF 18</span></div><div class="progress" aria-hidden="true"><span id="progress-fill"></span></div></div>
+      <div class="flow-grid">
+        <nav id="steps" class="steps" role="tablist" aria-label="Bank transfer steps"></nav>
+        <article id="step-content" class="step-content" role="tabpanel" aria-live="polite">
+          <h2 id="step-title"></h2><p id="step-summary" class="summary"></p>
+          <div class="diagram" aria-label="Transfer system parts added so far">
+            <div class="diagram-heading"><strong>PARTS IN THIS VERSION</strong><span>The active parts are highlighted</span></div>
+            <div id="route" class="route"></div>
+            <div class="signal"><span>THIS STEP</span><strong id="signal"></strong></div>
+            <div id="layers" class="layers" aria-label="Capabilities added so far"></div>
+          </div>
+          <div class="handoff"><h3>At this moment</h3><dl>
+            <div><dt>From</dt><dd id="handoff-from"></dd></div><div><dt>To</dt><dd id="handoff-to"></dd></div>
+            <div><dt>Data</dt><dd id="handoff-message"></dd></div><div><dt>Result</dt><dd id="handoff-state"></dd></div>
+          </dl></div>
+          <div class="explanation"><div><h3>Why add this?</h3><p id="step-why"></p></div><div><h3>What would you build?</h3><p id="step-tech"></p></div></div>
+          <details class="inspect"><summary>Inspect this step</summary><div><h3>Under the hood</h3><p id="step-inside"></p><h3>If it fails</h3><p id="step-failure"></p><a id="step-source" href="https://www.nacha.org/content/how-ach-payments-work" target="_blank" rel="noopener noreferrer"></a></div></details>
+          <p class="takeaway"><strong>Rule</strong><span id="takeaway"></span></p>
+          <div class="controls"><button id="previous" type="button">← Previous</button><button id="next" type="button">Next step →</button></div>
+        </article>
+      </div>
+    </section>
+    <section id="system-map" class="system-map" aria-labelledby="map-title">
+      <div class="section-heading"><p class="eyebrow">FULL SYSTEM VIEW</p><h2 id="map-title">One instruction, three sets of books</h2><p>Bank A records Maya's debit. FedACH moves an instruction and settles between banks. Bank B records Alex's credit.</p></div>
+      <div class="system-lanes">
+        <div><span>01 / ONE BANK</span><p>Maya <b>→</b> Bank A ledger <b>→</b> Alex at Bank A</p><small>One database transaction posts a $120 debit and a $120 credit together.</small></div>
+        <div><span>02 / OUTBOUND BANK</span><p>Maya <b>→</b> Bank A checks <b>→</b> $120 debit + ACH payable <b>→</b> outbox <b>→</b> entry TR1 in file F1</p><small>Bank A has funded the transfer. Alex has not yet been credited.</small></div>
+        <div><span>03 / NETWORK AND SETTLEMENT</span><p>F1 <b>→</b> FedACH acceptance <b>→</b> Bank B incoming file <b>→</b> net settlement between banks</p><small>Accepted file, delivered entry, and interbank settlement are separate checkpoints.</small></div>
+        <div><span>04 / RECIPIENT AND EXCEPTIONS</span><p>Bank B <b>→</b> Alex's account +$120 <b>→</b> funds available <b>·</b> or return TR1 through FedACH</p><small>A return compensates the original transfer; it does not erase it.</small></div>
+      </div>
+      <p class="trace"><strong>Trace this payment:</strong> K1 → T1 → debit and payable → outbox E1 → file F1 → trace TR1 → FedACH settlement → Bank B posting <span>IDs, bank names, and internal ledger accounts are a teaching design. The same-bank and ACH routes replay one hypothetical $120 payment; they are not two actual transfers.</span></p>
+    </section>
+    <section class="blueprint" aria-labelledby="blueprint-title">
+      <div class="section-heading"><p class="eyebrow">BUILD IT IN STAGES</p><h2 id="blueprint-title">A new boundary adds a new record</h2><p>Each new status should correspond to evidence that actually exists.</p></div>
+      <div class="blueprint-grid">
+        <article><span>01 / LOCAL</span><h3>Two accounts, one commit</h3><p>Post Maya's debit and Alex's credit atomically. Give retries a stable request key.</p></article>
+        <article><span>02 / TWO BANKS</span><h3>Debit, file, settle</h3><p>Fund the ACH credit, write an outbox row, build F1 with TR1, get FedACH acceptance, and settle between banks.</p></article>
+        <article><span>03 / COMPLETE</span><h3>Post and reconcile</h3><p>Bank B credits Alex or returns the entry. Each bank matches its ledger to operator records and investigates gaps.</p></article>
+      </div>
+      <div class="state-model"><strong>Keep four clocks separate</strong>
+        <p><span>Bank A</span> REQUESTED → READY_TO_SEND → FILE_ACCEPTED → SETTLED; or REJECTED, UNKNOWN, RETURNED.</p>
+        <p><span>FedACH</span> File received → accepted or rejected → entry delivered → settlement summary.</p>
+        <p><span>Bank B</span> Entry received → customer credited and available; or exception → return.</p>
+        <p><span>Customer views</span> Maya sees what Bank A can prove. Alex sees what Bank B actually posted.</p>
+        <small>There is no universal ACH message that tells Bank A every recipient credit was posted. A return may arrive after settlement.</small>
+      </div>
+      <details class="reference-detail"><summary>Exact records and identities</summary><div class="reference-body">
+        <p><strong>transfers:</strong> id=T1, sender_id, recipient_snapshot, amount_cents=12000, request_key=K1, rail=ACH, state, effective_date, file_id=F1, trace_number=TR1. The recipient snapshot and amount cannot change after acceptance.</p>
+        <p><strong>ledger_entries:</strong> id, transfer_id, account_id, debit_cents, credit_cents, posting_type, created_at. Each posting set balances. A unique (transfer_id, posting_type) prevents a retry from booking a debit or return credit twice.</p>
+        <p><strong>outbox:</strong> event_id=E1, transfer_id=T1, type=ACHCreditRequested, sent_at. The outbox row is committed with Bank A's funding entries.</p>
+        <p><strong>ach_entries:</strong> transfer_id unique, file_id=F1, trace_number=TR1, destination routing and account, amount, batch ID, settlement date, status. <strong>ach_files:</strong> file ID, exact bytes or secured object reference, checksum, control totals, send attempts, operator acknowledgment.</p>
+        <p><strong>Bank B incoming:</strong> operator file identity, originating bank, trace number, account number, amount, settlement date, posting status, return reason if any. A receiving bank keeps its own durable record; Bank A cannot read its ledger by default.</p>
+        <p><strong>Security:</strong> restrict access to full account numbers, encrypt them at rest where appropriate, mask them in customer screens, and keep them out of generic logs. Give each operations action an actor and timestamp.</p>
+      </div></details>
+      <details class="reference-detail"><summary>The $120 ledger, before and after the bank boundary</summary><div class="reference-body">
+        <p>These are changes in each bank's accounting balances. Deposits and ACH payables are liabilities; reserves are assets. Each pair belongs to one local bank transaction. The entries below are this guide's accounting design, not a claim about a particular bank's chart of accounts.</p>
+        <pre><code>First route: Alex also uses Bank A
+Bank A  Maya deposit liability       -$120
+        Alex deposit liability       +$120
+
+External route: Alex uses Bank B
+Bank A  Maya deposit liability       -$120
+        Outbound ACH payable         +$120
+
+At ACH settlement
+Bank A  Outbound ACH payable         -$120
+        Reserve asset                -$120
+Bank B  Reserve asset                +$120
+        Incoming ACH payable         +$120
+
+When Bank B credits Alex
+Bank B  Incoming ACH payable         -$120
+        Alex deposit liability       +$120
+
+If Bank B cannot post and the return settles
+Bank B  Incoming ACH payable         -$120
+        Reserve asset                -$120
+Bank A  Reserve asset                +$120
+        Maya deposit liability       +$120
+
+If canceled before any file is sent
+Bank A  Outbound ACH payable         -$120
+        Maya deposit liability       +$120</code></pre>
+        <p>Bank A's local payable bridges its customer debit to interbank settlement. Bank B's local payable bridges its settlement receipt to Alex's customer credit. A real ACH settlement nets many entries, so the $120 is the net only in this one-entry example.</p>
+      </div></details>
+      <details class="reference-detail"><summary>The atomic funding transaction</summary><div class="reference-body">
+        <p>Accept K1 once. In a short Bank A database transaction, insert T1 under the unique sender/request key, check that the details match any existing T1, guard Maya's available balance, post the two funding ledger entries, mark READY_TO_SEND, and insert E1. Commit only if every part succeeds.</p>
+        <pre><code>BEGIN;
+-- K1 is unique for Maya; a retry returns the existing T1.
+UPDATE account_balances
+SET available_cents = available_cents - 12000
+WHERE account_id = :maya_account
+  AND available_cents &gt;= 12000
+RETURNING available_cents;
+-- Require one row; otherwise ROLLBACK.
+-- Insert balanced Maya debit and ACH payable postings for T1.
+-- Insert ACHCreditRequested(T1) into the outbox.
+COMMIT;</code></pre>
+        <p>The guarded update is the balance decision; the ledger postings are the audit record. Keep the balance projection and ledger entries in the same local transaction. There is no open database transaction while waiting for FedACH.</p>
+      </div></details>
+      <details class="reference-detail"><summary>What is inside F1, and what each response proves</summary><div class="reference-body">
+        <p><strong>ACH file:</strong> type 1 file header, type 5 batch header, type 6 entry detail for TR1, type 8 batch control, and type 9 file control. The file and batch control records carry counts and totals. The correct Standard Entry Class code and other fields depend on the originator and use case; Bank A's ACH operations determine them.</p>
+        <p><strong>TR1 entry detail:</strong> receiving bank routing ID and check digit, Alex's account number, amount as 10 numeric digits in cents, recipient name, and a 15-digit ODFI trace number. The label TR1 is shorthand here, not a literal Nacha trace value.</p>
+        <p><strong>Transport sent:</strong> Bank A attempted delivery of F1. <strong>Operator accepted:</strong> FedACH accepted the relevant file/batch for processing; Bank A still checks for item rejects. <strong>Distributed:</strong> FedACH sent the entry to Bank B. <strong>Settled:</strong> Bank A and Bank B's ACH positions were booked. <strong>Recipient posted:</strong> only Bank B's customer ledger confirms this last step.</p>
+        <p>Keep a file checksum, operator file ID, batch ID, trace number, processing date, and settlement date. They let operations staff find the exact instruction when a response is lost or a return arrives.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Timing, availability, returns, and correction</summary><div class="reference-body">
+        <p><strong>Example timing:</strong> Bank A submits a future-dated standard ACH credit for the next banking day before its own cutoff. FedACH's schedule lists 8:30 a.m. ET settlement for future-dated forward items. Operator deadlines are not necessarily the cutoff Bank A offers Maya. Weekend and holiday rules change the next banking day.</p>
+        <p><strong>Availability:</strong> When Bank B receives a standard credit before 5 p.m. its local time on the prior day, the applicable ACH rule generally requires availability by 9 a.m. Bank B local time on settlement day. Earlier access can be Bank B advancing its own funds; it is not proof of earlier interbank settlement.</p>
+        <p><strong>Return:</strong> A nonexistent account can produce R03; a closed account can produce R02. Match return reason, original trace, amount, and banks to T1. When the return settles, post one compensating Maya credit. A return is a new entry, not an edit of the original.</p>
+        <p><strong>Reversal:</strong> A sender-side error such as duplicate, wrong amount, wrong recipient, or certain wrong-date cases may qualify under Nacha rules within a limited window. A reversal can itself be returned and is not a guaranteed refund. A fraud report needs its own investigation and recovery path.</p>
+      </div></details>
+      <details class="reference-detail"><summary>Failure drills to run before launch</summary><div class="reference-body">
+        <p><strong>Double tap:</strong> Submit K1 twice concurrently. Assert one T1, one Maya debit, one payable credit, and one outbox event. Reuse K1 with a different amount and assert rejection.</p>
+        <p><strong>Insufficient funds:</strong> Let Maya have $80 available. Assert no debit, no outbox event, and no ACH entry.</p>
+        <p><strong>Worker crash:</strong> Commit Bank A funding, then stop the ACH worker. Assert E1 remains and F1 is created once after restart.</p>
+        <p><strong>File reject:</strong> Simulate FedACH rejecting F1. Keep T1 out of FILE_ACCEPTED and preserve the reason, exact F1 bytes, and correction attempt.</p>
+        <p><strong>Lost acknowledgment:</strong> Let F1 be accepted but drop the response. Assert UNKNOWN triggers file-status inquiry and no independently generated F2.</p>
+        <p><strong>Wrong account:</strong> Bank B returns TR1 with R03. Assert one matching Maya compensating credit and a RETURNED status; a corrected transfer uses a new T2.</p>
+        <p><strong>Settlement mismatch:</strong> Change a file total in a test fixture. Assert reconciliation opens an exception rather than silently adjusting a customer balance.</p>
+      </div></details>
+      <details class="reference-detail"><summary>What changes on an instant rail</summary><div class="reference-body">
+        <p><strong>FedNow:</strong> Participating banks exchange individual instant credit messages and settle between Federal Reserve accounts at the same time, around the clock. The sender needs a final network result and recipient availability within seconds. There is no Nacha batch file F1 or ACH return timeline in that route.</p>
+        <p><strong>Fedwire:</strong> A separate high-value rail with its own operating hours, message IDs, and final settlement rules. <strong>RTP:</strong> The Clearing House's separate 24/7 instant rail with final interbank settlement. These are not faster processing modes of ACH.</p>
+        <p>The common pattern is authenticated instruction → balance guard → rail-specific message → interbank settlement → receiving bank posting. The exact order, finality, status messages, and recovery powers come from the chosen rail's rules.</p>
+      </div></details>
+    </section>
+    <section class="reference" aria-label="Reference information">
+      <details><summary>Key terms</summary><div class="reference-body">
+        <p><strong>Ledger</strong> Bank records of debits and credits, kept as durable postings.</p>
+        <p><strong>ODFI</strong> Originating Depository Financial Institution; Bank A in this ACH example.</p>
+        <p><strong>RDFI</strong> Receiving Depository Financial Institution; Bank B in this example.</p>
+        <p><strong>ACH Operator</strong> A network operator that edits, sorts, distributes, and settles ACH entries. FedACH is the chosen operator here.</p>
+        <p><strong>Trace number</strong> An ODFI-assigned identifier in the ACH entry detail record.</p>
+        <p><strong>Settlement</strong> The interbank financial obligation being paid through settlement accounts.</p>
+        <p><strong>Return</strong> A new ACH entry back toward the sender under network rules, often because the original could not be posted.</p>
+        <p><strong>Reversal</strong> A separate attempt to correct a permitted sender error after an entry was sent.</p>
+        <p><strong>Reconciliation</strong> Matching bank ledgers, files, operator records, and returns by identity, count, and amount.</p>
+      </div></details>
+      <details><summary>Sources and scope</summary><div class="reference-body">
+        <p>This is a teaching design for a domestic U.S. ACH credit that Bank A offers to Maya. It assumes both banks settle directly at the Federal Reserve; a bank may use a settlement agent. It is not an account debit pull, a wire, an instant payment, or a description of a bank's private ledger. Bank policy, legal duties, cutoffs, and funds timing must be checked for a real product.</p>
+        <ul>
+          <li><a href="https://www.nacha.org/content/how-ach-payments-work" target="_blank" rel="noopener noreferrer">Nacha: how ACH credits work</a></li>
+          <li><a href="https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html" target="_blank" rel="noopener noreferrer">AWS: transactional outbox</a></li>
+          <li><a href="https://achdevguide.nacha.org/ach-file-overview" target="_blank" rel="noopener noreferrer">Nacha: ACH file structure</a></li>
+          <li><a href="https://achdevguide.nacha.org/ach-file-details" target="_blank" rel="noopener noreferrer">Nacha: entry field layout</a></li>
+          <li><a href="https://www.federalreserve.gov/paymentsystems/fedach_about.htm" target="_blank" rel="noopener noreferrer">Federal Reserve: ACH operator and settlement</a></li>
+          <li><a href="https://www.frbservices.org/financial-services/fedach-services/origination-receipt/" target="_blank" rel="noopener noreferrer">Federal Reserve: FedACH file status</a></li>
+          <li><a href="https://www.frbservices.org/resources/resource-centers/same-day-ach-resource-center/fedach-processing-schedule/" target="_blank" rel="noopener noreferrer">Federal Reserve: FedACH processing schedule</a></li>
+          <li><a href="https://www.nacha.org/sites/default/files/2023-05/Same_Day_ACH_Schedules_and_Funds_Availability.pdf" target="_blank" rel="noopener noreferrer">Nacha: ACH funds availability</a></li>
+          <li><a href="https://www.nacha.org/news/ach-operations-bulletin-2-2024-voluntary-formatting-standard-individual-name-field" target="_blank" rel="noopener noreferrer">Nacha: account number versus name</a></li>
+          <li><a href="https://www.nacha.org/news/ach-operations-bulletin-1-2025-same-day-processing-ach-returns-rdfis" target="_blank" rel="noopener noreferrer">Nacha: return processing</a></li>
+          <li><a href="https://www.nacha.org/news/second-chance-understanding-ach-reversals" target="_blank" rel="noopener noreferrer">Nacha: limited reversals</a></li>
+          <li><a href="https://www.frbservices.org/fedline-solutions/fedline-developer/fedach-apis/" target="_blank" rel="noopener noreferrer">Federal Reserve: status and settlement APIs</a></li>
+          <li><a href="https://www.frbservices.org/financial-services/fednow-service/about-fednow-service/" target="_blank" rel="noopener noreferrer">Federal Reserve: FedNow comparison</a></li>
+        </ul>
+      </div></details>
+    </section>
+  </main>
+  <footer class="footer wrap"><span>SYSTEMS/ ZERO</span><a href="../../">All guides</a></footer>
+</body>
+</html>
